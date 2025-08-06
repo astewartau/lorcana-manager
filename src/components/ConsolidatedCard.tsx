@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Plus, Minus } from 'lucide-react';
 import { ConsolidatedCard } from '../types';
 
@@ -14,6 +14,42 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
   onQuantityChange 
 }) => {
   const { baseCard, variants, hasEnchanted, hasSpecial } = consolidatedCard;
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const [transform, setTransform] = useState('');
+  const [lightPosition, setLightPosition] = useState({ x: 50, y: 50 });
+  
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    
+    const card = cardRef.current;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    // Calculate rotation based on mouse position
+    const rotateX = ((y - centerY) / centerY) * -15; // Max 15 degrees
+    const rotateY = ((x - centerX) / centerX) * 15; // Max 15 degrees
+    
+    // Calculate light position as percentage
+    const lightX = (x / rect.width) * 100;
+    const lightY = (y / rect.height) * 100;
+    
+    setTransform(`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`);
+    setLightPosition({ x: lightX, y: lightY });
+  };
+  
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+  
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setTransform('');
+    setLightPosition({ x: 50, y: 50 });
+  };
 
   const getVariantBackground = (variantType: 'regular' | 'foil' | 'enchanted' | 'special') => {
     switch (variantType) {
@@ -62,13 +98,35 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
   return (
     <div className="flex flex-col space-y-2">
       {/* Card Image */}
-      <div className="relative rounded-lg shadow-md hover:shadow-lg transition-shadow aspect-[2.5/3.5] overflow-hidden">
+      <div 
+        ref={cardRef}
+        className="relative rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 ease-out aspect-[2.5/3.5] overflow-hidden cursor-pointer transform-gpu"
+        style={{
+          transform: transform,
+          transformOrigin: 'center center',
+          transition: isHovered ? 'transform 0.1s ease-out, box-shadow 0.3s ease-out' : 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.3s ease-out'
+        }}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         <img 
           src={baseCard.images.full} 
           alt={baseCard.fullName}
           className="w-full h-full object-cover"
           loading="lazy"
+          style={{ pointerEvents: 'none' }}
         />
+        
+        {/* Light overlay effect */}
+        {isHovered && (
+          <div 
+            className="absolute inset-0 pointer-events-none opacity-30 transition-opacity duration-300"
+            style={{
+              background: `radial-gradient(circle at ${lightPosition.x}% ${lightPosition.y}%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 30%, transparent 60%)`
+            }}
+          />
+        )}
         
         {/* Variant indicators */}
         <div className="absolute top-2 right-2 flex flex-col space-y-1">

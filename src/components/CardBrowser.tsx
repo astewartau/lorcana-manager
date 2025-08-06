@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Grid, List, ChevronLeft, ChevronRight, Filter, RotateCcw, X } from 'lucide-react';
 import { FilterOptions, SortOption, ConsolidatedCard } from '../types';
-import { consolidatedCards, rarityOrder, rarities, colors, cardTypes, stories, subtypes, costs, sets, costRange, strengthRange, willpowerRange, loreRange } from '../data/allCards';
+import { consolidatedCards, rarities, colors, cardTypes, stories, subtypes, costs, sets, costRange, strengthRange, willpowerRange, loreRange } from '../data/allCards';
 import { useCollection } from '../contexts/CollectionContext';
-import { consolidatedCardMatchesFilters } from '../utils/cardConsolidation';
-import ConsolidatedCardComponent from './ConsolidatedCard';
 import MultiSelectFilter from './MultiSelectFilter';
 import RangeFilter from './RangeFilter';
 import { CollectionFilter, InkwellFilter, SpecialVariantsFilter } from './filters';
+import { CardGridView, CardListView, GroupedView } from './card-views';
+import { usePagination } from '../hooks';
+import { filterCards, sortCards, groupCards, countActiveFilters } from '../utils/cardFiltering';
 
 
 const CardBrowser: React.FC = () => {
@@ -38,8 +39,6 @@ const CardBrowser: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<SortOption>({ field: 'name', direction: 'asc' });
   const [groupBy, setGroupBy] = useState<string>('none');
-  const [currentPage, setCurrentPage] = useState(1);
-  
   // Filter state memory for handling cards that no longer match filters
   const [staleCardIds, setStaleCardIds] = useState<Set<number>>(new Set());
   const [showFilterNotification, setShowFilterNotification] = useState(false);
@@ -79,213 +78,33 @@ const CardBrowser: React.FC = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  const { filteredAndSortedCards, groupedCards, totalPages, totalCards, activeFiltersCount } = useMemo(() => {
-    let filtered = consolidatedCards.filter(consolidatedCard => {
-      const { baseCard } = consolidatedCard;
-      
-      // If this card is in our stale cards set, always include it
-      if (staleCardIds.has(baseCard.id)) {
-        console.log('Including stale card:', baseCard.name);
-        return true;
-      }
-      
-      const matchesSearch = baseCard.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (baseCard.version?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
-                           (baseCard.story?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
-      
-      const matchesSet = filters.sets.length === 0 || filters.sets.includes(baseCard.setCode);
-      const matchesColor = filters.colors.length === 0 || filters.colors.includes(baseCard.color);
-      const matchesType = filters.types.length === 0 || filters.types.includes(baseCard.type);
-      const matchesStory = filters.stories.length === 0 || (baseCard.story && filters.stories.includes(baseCard.story));
-      const matchesSubtype = filters.subtypes.length === 0 || (baseCard.subtypes && baseCard.subtypes.some(st => filters.subtypes.includes(st)));
-      
-      const matchesCostList = filters.costs.length === 0 || filters.costs.includes(baseCard.cost);
-      const matchesCostRange = baseCard.cost >= filters.costMin && baseCard.cost <= filters.costMax;
-      
-      const matchesStrength = baseCard.strength === undefined || (baseCard.strength >= filters.strengthMin && baseCard.strength <= filters.strengthMax);
-      const matchesWillpower = baseCard.willpower === undefined || (baseCard.willpower >= filters.willpowerMin && baseCard.willpower <= filters.willpowerMax);
-      const matchesLore = baseCard.lore === undefined || (baseCard.lore >= filters.loreMin && baseCard.lore <= filters.loreMax);
-      
-      const matchesInkwell = filters.inkwellOnly === null || baseCard.inkwell === filters.inkwellOnly;
-      
-      // Check if card is in collection
-      const matchesInCollection = filters.inMyCollection === null || (() => {
-        const quantities = getVariantQuantities(consolidatedCard.fullName);
-        const totalOwned = quantities.regular + quantities.foil + quantities.enchanted + quantities.special;
-        const legacyQuantity = getCardQuantity(baseCard.id);
-        const isInCollection = totalOwned > 0 || legacyQuantity > 0;
-        return filters.inMyCollection ? isInCollection : !isInCollection;
-      })();
-      
-      // Check card count filter
-      const matchesCardCount = filters.cardCountOperator === null || (() => {
-        const quantities = getVariantQuantities(consolidatedCard.fullName);
-        const totalOwned = quantities.regular + quantities.foil + quantities.enchanted + quantities.special;
-        const legacyQuantity = getCardQuantity(baseCard.id);
-        const totalCount = totalOwned + legacyQuantity;
-        
-        switch (filters.cardCountOperator) {
-          case 'eq': return totalCount === filters.cardCountValue;
-          case 'gte': return totalCount >= filters.cardCountValue;
-          case 'lte': return totalCount <= filters.cardCountValue;
-          default: return true;
-        }
-      })();
-      
-      // Check consolidated card specific filters
-      const matchesConsolidatedFilters = consolidatedCardMatchesFilters(consolidatedCard, filters);
-
-      return matchesSearch && matchesSet && matchesColor && matchesType && 
-             matchesStory && matchesSubtype && matchesCostList && matchesCostRange &&
-             matchesStrength && matchesWillpower && matchesLore && matchesInkwell &&
-             matchesInCollection && matchesCardCount && matchesConsolidatedFilters;
-    });
-
-    const sorted = filtered.sort((a, b) => {
-      let aValue: any, bValue: any;
-      const aCard = a.baseCard;
-      const bCard = b.baseCard;
-
-      switch (sortBy.field) {
-        case 'name':
-          aValue = aCard.name;
-          bValue = bCard.name;
-          break;
-        case 'cost':
-          aValue = aCard.cost;
-          bValue = bCard.cost;
-          break;
-        case 'rarity':
-          aValue = rarityOrder.indexOf(aCard.rarity);
-          bValue = rarityOrder.indexOf(bCard.rarity);
-          break;
-        case 'set':
-          aValue = aCard.setCode;
-          bValue = bCard.setCode;
-          break;
-        case 'number':
-          aValue = aCard.number;
-          bValue = bCard.number;
-          break;
-        case 'color':
-          aValue = aCard.color;
-          bValue = bCard.color;
-          break;
-        case 'type':
-          aValue = aCard.type;
-          bValue = bCard.type;
-          break;
-        case 'story':
-          aValue = aCard.story || '';
-          bValue = bCard.story || '';
-          break;
-        case 'strength':
-          aValue = aCard.strength || 0;
-          bValue = bCard.strength || 0;
-          break;
-        case 'willpower':
-          aValue = aCard.willpower || 0;
-          bValue = bCard.willpower || 0;
-          break;
-        case 'lore':
-          aValue = aCard.lore || 0;
-          bValue = bCard.lore || 0;
-          break;
-        default:
-          aValue = aCard.name;
-          bValue = bCard.name;
-      }
-
-      if (typeof aValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-
-      if (sortBy.direction === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
-    });
-
-    const totalCards = sorted.length;
+  // Filter and sort cards using utility functions
+  const { sortedCards, groupedCards, totalCards, activeFiltersCount } = useMemo(() => {
+    const filtered = filterCards(consolidatedCards, searchTerm, filters, staleCardIds, getVariantQuantities, getCardQuantity);
+    const sorted = sortCards(filtered, sortBy);
+    const grouped = groupCards(sorted, groupBy);
+    const activeCount = countActiveFilters(filters);
     
-    // Group cards if groupBy is not 'none'
-    let groupedCards: { [key: string]: ConsolidatedCard[] } = {};
-    if (groupBy !== 'none') {
-      sorted.forEach(card => {
-        let groupKey = '';
-        const baseCard = card.baseCard;
-        
-        switch (groupBy) {
-          case 'set':
-            const setInfo = sets.find(s => s.code === baseCard.setCode);
-            groupKey = setInfo?.name || baseCard.setCode;
-            break;
-          case 'color':
-            groupKey = baseCard.color || 'No Ink Color';
-            break;
-          case 'rarity':
-            groupKey = baseCard.rarity;
-            break;
-          case 'type':
-            groupKey = baseCard.type;
-            break;
-          case 'story':
-            groupKey = baseCard.story || 'No Story';
-            break;
-          case 'cost':
-            groupKey = `Cost ${baseCard.cost}`;
-            break;
-          default:
-            groupKey = 'Unknown';
-        }
-        
-        if (!groupedCards[groupKey]) {
-          groupedCards[groupKey] = [];
-        }
-        groupedCards[groupKey].push(card);
-      });
-    }
-    
-    const totalPages = Math.ceil(totalCards / cardsPerPage);
-    const startIndex = (currentPage - 1) * cardsPerPage;
-    const endIndex = startIndex + cardsPerPage;
-    const paginatedCards = sorted.slice(startIndex, endIndex);
-
-    // Count active filters
-    const activeFiltersCount = (
-      filters.sets.length +
-      filters.colors.length +
-      filters.rarities.length +
-      filters.types.length +
-      filters.stories.length +
-      filters.subtypes.length +
-      filters.costs.length +
-      (filters.costMin !== costRange.min || filters.costMax !== costRange.max ? 1 : 0) +
-      (filters.strengthMin !== strengthRange.min || filters.strengthMax !== strengthRange.max ? 1 : 0) +
-      (filters.willpowerMin !== willpowerRange.min || filters.willpowerMax !== willpowerRange.max ? 1 : 0) +
-      (filters.loreMin !== loreRange.min || filters.loreMax !== loreRange.max ? 1 : 0) +
-      (filters.inkwellOnly !== null ? 1 : 0) +
-      (filters.hasEnchanted !== null ? 1 : 0) +
-      (filters.hasSpecial !== null ? 1 : 0) +
-      (filters.inMyCollection !== null ? 1 : 0) +
-      (filters.cardCountOperator !== null ? 1 : 0)
-    );
-
     return {
-      filteredAndSortedCards: paginatedCards,
-      groupedCards,
-      totalPages,
-      totalCards,
-      activeFiltersCount
+      sortedCards: sorted,
+      groupedCards: grouped,
+      totalCards: sorted.length,
+      activeFiltersCount: activeCount
     };
-  }, [searchTerm, filters, sortBy, groupBy, currentPage, cardsPerPage, getVariantQuantities, getCardQuantity, staleCardIds]);
+  }, [searchTerm, filters, sortBy, groupBy, getVariantQuantities, getCardQuantity, staleCardIds]);
+  
+  // Pagination
+  const pagination = usePagination({
+    totalItems: totalCards,
+    itemsPerPage: cardsPerPage,
+    resetTriggers: [searchTerm, filters, sortBy, groupBy]
+  });
+  
+  // Get paginated cards for current page
+  const paginatedCards = useMemo(() => {
+    return sortedCards.slice(pagination.startIndex, pagination.endIndex);
+  }, [sortedCards, pagination.startIndex, pagination.endIndex]);
 
-  // Reset to page 1 when search or filters change
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filters, sortBy, groupBy]);
 
   // Clear stale cards when filters change (user is intentionally refreshing)
   React.useEffect(() => {
@@ -646,24 +465,24 @@ const CardBrowser: React.FC = () => {
           {groupBy !== 'none' ? (
             `Showing ${totalCards} cards in ${Object.keys(groupedCards).length} groups`
           ) : (
-            `Showing ${((currentPage - 1) * cardsPerPage) + 1}-${Math.min(currentPage * cardsPerPage, totalCards)} of ${totalCards} cards`
+            `Showing ${pagination.startIndex + 1}-${Math.min(pagination.endIndex, totalCards)} of ${totalCards} cards`
           )}
         </div>
-        {groupBy === 'none' && totalPages > 1 && (
+        {groupBy === 'none' && pagination.totalPages > 1 && (
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
+              onClick={pagination.goToPrevPage}
+              disabled={pagination.currentPage === 1}
               className="p-2 rounded-lg border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 hover:bg-gray-50 transition-colors"
             >
               <ChevronLeft size={16} />
             </button>
             <span className="text-sm text-gray-600">
-              Page {currentPage} of {totalPages}
+              Page {pagination.currentPage} of {pagination.totalPages}
             </span>
             <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
+              onClick={pagination.goToNextPage}
+              disabled={pagination.currentPage === pagination.totalPages}
               className="p-2 rounded-lg border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 hover:bg-gray-50 transition-colors"
             >
               <ChevronRight size={16} />
@@ -673,395 +492,39 @@ const CardBrowser: React.FC = () => {
       </div>
 
       {groupBy !== 'none' ? (
-        // Grouped view
-        <div className="space-y-6">
-          {Object.entries(groupedCards).map(([groupName, cards]) => (
-            <div key={groupName}>
-              {/* Group Header */}
-              <div className="flex items-center mb-4">
-                <div className="flex-1 h-px bg-gray-300"></div>
-                <h3 className="px-4 text-lg font-semibold text-gray-700 bg-white">{groupName}</h3>
-                <div className="flex-1 h-px bg-gray-300"></div>
-              </div>
-              
-              {/* Cards in this group */}
-              {viewMode === 'grid' ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-8">
-                  {cards.map((consolidatedCard) => {
-                    const quantities = getVariantQuantities(consolidatedCard.fullName);
-                    return (
-                      <div key={consolidatedCard.baseCard.id} className="relative mb-3">
-                        <ConsolidatedCardComponent
-                          consolidatedCard={consolidatedCard}
-                          quantities={quantities}
-                          onQuantityChange={(variantType, change) => 
-                            handleVariantQuantityChange(consolidatedCard, variantType, change)
-                          }
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-1 mb-8">
-                  {cards.map((consolidatedCard) => {
-                    const { baseCard, hasEnchanted, hasSpecial } = consolidatedCard;
-                    const quantities = getVariantQuantities(consolidatedCard.fullName);
-                    const totalOwned = quantities.regular + quantities.foil + quantities.enchanted + quantities.special;
-                    const setInfo = sets.find(s => s.code === baseCard.setCode);
-                    
-                    // Ultra-compact quantity control
-                    const renderMiniControl = (
-                      variantType: 'regular' | 'foil' | 'enchanted' | 'special',
-                      quantity: number,
-                      isAvailable: boolean,
-                      label: string
-                    ) => {
-                      if (!isAvailable) return null;
-                      return (
-                        <div className="flex items-center space-x-0.5 text-xs">
-                          <span className="text-gray-500 font-medium">{label}:</span>
-                          <button
-                            onClick={() => handleVariantQuantityChange(consolidatedCard, variantType, -1)}
-                            disabled={quantity <= 0}
-                            className="px-1 hover:bg-black hover:bg-opacity-10 rounded disabled:opacity-50 text-gray-600"
-                          >
-                            -
-                          </button>
-                          <span className="min-w-[16px] text-center font-semibold">{quantity}</span>
-                          <button
-                            onClick={() => handleVariantQuantityChange(consolidatedCard, variantType, 1)}
-                            className="px-1 hover:bg-black hover:bg-opacity-10 rounded text-gray-600"
-                          >
-                            +
-                          </button>
-                        </div>
-                      );
-                    };
-                    
-                    return (
-                      <div 
-                        key={baseCard.id} 
-                        className="bg-white p-2 rounded hover:shadow-md transition-shadow flex items-center space-x-2 text-xs border border-gray-200"
-                      >
-                        {/* Card Number */}
-                        <span className="font-mono text-gray-700 font-semibold w-12 text-center">#{baseCard.number}</span>
-                        
-                        {/* Rarity */}
-                        {rarityIconMap[baseCard.rarity] && (
-                          <img 
-                            src={rarityIconMap[baseCard.rarity]} 
-                            alt={baseCard.rarity}
-                            className="w-3 h-3 flex-shrink-0"
-                          />
-                        )}
-                        
-                        {/* Ink Color Icon */}
-                        {baseCard.color && (
-                          <div className="flex-shrink-0 w-4 h-4 relative">
-                            {baseCard.color.includes('-') ? (
-                              // Dual-ink cards: show both icons split diagonally
-                              (() => {
-                                const [color1, color2] = baseCard.color.split('-');
-                                const icon1 = colorIconMap[color1];
-                                const icon2 = colorIconMap[color2];
-                                if (icon1 && icon2) {
-                                  return (
-                                    <div className="relative w-4 h-4">
-                                      {/* First color (top-left triangle) */}
-                                      <div className="absolute inset-0 overflow-hidden">
-                                        <img 
-                                          src={icon1} 
-                                          alt={color1}
-                                          className="w-4 h-4"
-                                          style={{
-                                            clipPath: 'polygon(0 0, 100% 0, 0 100%)'
-                                          }}
-                                        />
-                                      </div>
-                                      {/* Second color (bottom-right triangle) */}
-                                      <div className="absolute inset-0 overflow-hidden">
-                                        <img 
-                                          src={icon2} 
-                                          alt={color2}
-                                          className="w-4 h-4"
-                                          style={{
-                                            clipPath: 'polygon(100% 0, 100% 100%, 0 100%)'
-                                          }}
-                                        />
-                                      </div>
-                                      {/* Diagonal separator line */}
-                                      <div 
-                                        className="absolute inset-0 border-black border-opacity-20"
-                                        style={{
-                                          borderWidth: '0 0 1px 0',
-                                          transform: 'rotate(45deg)',
-                                          transformOrigin: 'center'
-                                        }}
-                                      />
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              })()
-                            ) : (
-                              // Single ink cards: show normal icon
-                              colorIconMap[baseCard.color] && (
-                                <img 
-                                  src={colorIconMap[baseCard.color]} 
-                                  alt={baseCard.color}
-                                  className="w-4 h-4"
-                                />
-                              )
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* Set */}
-                        <span className="text-gray-600 text-xs w-10 truncate" title={setInfo?.name || baseCard.setCode}>
-                          {setInfo?.code || baseCard.setCode}
-                        </span>
-                        
-                        {/* Main Info Section - Flexible Width */}
-                        <div className="flex-1 flex items-center space-x-2 min-w-0">
-                          {/* Card Name */}
-                          <span className="font-semibold text-gray-900 truncate">{baseCard.name}</span>
-                          
-                          {/* Version if exists */}
-                          {baseCard.version && (
-                            <span className="text-gray-600 truncate">- {baseCard.version}</span>
-                          )}
-                        </div>
-                        
-                        {/* Stats with emojis */}
-                        <div className="flex items-center space-x-2 flex-shrink-0">
-                          {baseCard.strength !== undefined && (
-                            <span className="text-gray-700 font-medium" title="Strength">
-                              💪{baseCard.strength}
-                            </span>
-                          )}
-                          {baseCard.willpower !== undefined && (
-                            <span className="text-gray-700 font-medium" title="Willpower">
-                              🛡️{baseCard.willpower}
-                            </span>
-                          )}
-                          {baseCard.lore !== undefined && (
-                            <span className="text-gray-700 font-medium" title="Lore">
-                              ◆{baseCard.lore}
-                            </span>
-                          )}
-                        </div>
-                        
-                        {/* Controls Section - Fixed Width */}
-                        <div className="flex items-center space-x-2 flex-shrink-0">
-                          {renderMiniControl('regular', quantities.regular, consolidatedCard.variants.regular !== null, 'R')}
-                          {renderMiniControl('foil', quantities.foil, consolidatedCard.variants.foil !== null, 'F')}
-                          {hasEnchanted && renderMiniControl('enchanted', quantities.enchanted, true, 'E')}
-                          {hasSpecial && renderMiniControl('special', quantities.special, true, 'S')}
-                          
-                          {/* Total */}
-                          <div className="ml-2 pl-2 border-l border-gray-400">
-                            <span className="font-semibold text-gray-700">T:{totalOwned}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <GroupedView
+          groupedCards={groupedCards}
+          viewMode={viewMode}
+          onQuantityChange={handleVariantQuantityChange}
+          getVariantQuantities={getVariantQuantities}
+          staleCardIds={staleCardIds}
+          rarityIconMap={rarityIconMap}
+          colorIconMap={colorIconMap}
+          sets={sets}
+        />
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-8">
-          {filteredAndSortedCards.map((consolidatedCard) => {
-            const quantities = getVariantQuantities(consolidatedCard.fullName);
-            return (
-              <div key={consolidatedCard.baseCard.id} className="relative mb-3">
-                <ConsolidatedCardComponent
-                  consolidatedCard={consolidatedCard}
-                  quantities={quantities}
-                  onQuantityChange={(variantType, change) => 
-                    handleVariantQuantityChange(consolidatedCard, variantType, change)
-                  }
-                />
-              </div>
-            );
-          })}
-        </div>
+        <CardGridView
+          cards={paginatedCards}
+          onQuantityChange={handleVariantQuantityChange}
+          getVariantQuantities={getVariantQuantities}
+        />
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-1">
-          {filteredAndSortedCards.map((consolidatedCard) => {
-            const { baseCard, hasEnchanted, hasSpecial } = consolidatedCard;
-            const quantities = getVariantQuantities(consolidatedCard.fullName);
-            const totalOwned = quantities.regular + quantities.foil + quantities.enchanted + quantities.special;
-            const setInfo = sets.find(s => s.code === baseCard.setCode);
-            
-            // Ultra-compact quantity control
-            const renderMiniControl = (
-              variantType: 'regular' | 'foil' | 'enchanted' | 'special',
-              quantity: number,
-              isAvailable: boolean,
-              label: string
-            ) => {
-              if (!isAvailable) return null;
-              return (
-                <div className="flex items-center space-x-0.5 text-xs">
-                  <span className="text-gray-500 font-medium">{label}:</span>
-                  <button
-                    onClick={() => handleVariantQuantityChange(consolidatedCard, variantType, -1)}
-                    disabled={quantity <= 0}
-                    className="px-1 hover:bg-black hover:bg-opacity-10 rounded disabled:opacity-50 text-gray-600"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-[16px] text-center font-semibold">{quantity}</span>
-                  <button
-                    onClick={() => handleVariantQuantityChange(consolidatedCard, variantType, 1)}
-                    className="px-1 hover:bg-black hover:bg-opacity-10 rounded text-gray-600"
-                  >
-                    +
-                  </button>
-                </div>
-              );
-            };
-            
-            return (
-              <div 
-                key={baseCard.id} 
-                className="bg-white p-2 rounded hover:shadow-md transition-shadow flex items-center space-x-2 text-xs border border-gray-200"
-              >
-                {/* Card Number */}
-                <span className="font-mono text-gray-700 font-semibold w-12 text-center">#{baseCard.number}</span>
-                
-                {/* Rarity */}
-                {rarityIconMap[baseCard.rarity] && (
-                  <img 
-                    src={rarityIconMap[baseCard.rarity]} 
-                    alt={baseCard.rarity}
-                    className="w-3 h-3 flex-shrink-0"
-                  />
-                )}
-                
-                {/* Ink Color Icon */}
-                {baseCard.color && (
-                  <div className="flex-shrink-0 w-4 h-4 relative">
-                    {baseCard.color.includes('-') ? (
-                      // Dual-ink cards: show both icons split diagonally
-                      (() => {
-                        const [color1, color2] = baseCard.color.split('-');
-                        const icon1 = colorIconMap[color1];
-                        const icon2 = colorIconMap[color2];
-                        if (icon1 && icon2) {
-                          return (
-                            <div className="relative w-4 h-4">
-                              {/* First color (top-left triangle) */}
-                              <div className="absolute inset-0 overflow-hidden">
-                                <img 
-                                  src={icon1} 
-                                  alt={color1}
-                                  className="w-4 h-4"
-                                  style={{
-                                    clipPath: 'polygon(0 0, 100% 0, 0 100%)'
-                                  }}
-                                />
-                              </div>
-                              {/* Second color (bottom-right triangle) */}
-                              <div className="absolute inset-0 overflow-hidden">
-                                <img 
-                                  src={icon2} 
-                                  alt={color2}
-                                  className="w-4 h-4"
-                                  style={{
-                                    clipPath: 'polygon(100% 0, 100% 100%, 0 100%)'
-                                  }}
-                                />
-                              </div>
-                              {/* Diagonal separator line */}
-                              <div 
-                                className="absolute inset-0 border-black border-opacity-20"
-                                style={{
-                                  borderWidth: '0 0 1px 0',
-                                  transform: 'rotate(45deg)',
-                                  transformOrigin: 'center'
-                                }}
-                              />
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()
-                    ) : (
-                      // Single ink cards: show normal icon
-                      colorIconMap[baseCard.color] && (
-                        <img 
-                          src={colorIconMap[baseCard.color]} 
-                          alt={baseCard.color}
-                          className="w-4 h-4"
-                        />
-                      )
-                    )}
-                  </div>
-                )}
-                
-                {/* Set */}
-                <span className="text-gray-600 text-xs w-10 truncate" title={setInfo?.name || baseCard.setCode}>
-                  {setInfo?.code || baseCard.setCode}
-                </span>
-                
-                {/* Main Info Section - Flexible Width */}
-                <div className="flex-1 flex items-center space-x-2 min-w-0">
-                  {/* Card Name */}
-                  <span className="font-semibold text-gray-900 truncate">{baseCard.name}</span>
-                  
-                  {/* Version if exists */}
-                  {baseCard.version && (
-                    <span className="text-gray-600 truncate">- {baseCard.version}</span>
-                  )}
-                </div>
-                
-                {/* Stats with emojis */}
-                <div className="flex items-center space-x-2 flex-shrink-0">
-                  {baseCard.strength !== undefined && (
-                    <span className="text-gray-700 font-medium" title="Strength">
-                      💪{baseCard.strength}
-                    </span>
-                  )}
-                  {baseCard.willpower !== undefined && (
-                    <span className="text-gray-700 font-medium" title="Willpower">
-                      🛡️{baseCard.willpower}
-                    </span>
-                  )}
-                  {baseCard.lore !== undefined && (
-                    <span className="text-gray-700 font-medium" title="Lore">
-                      ◆{baseCard.lore}
-                    </span>
-                  )}
-                </div>
-                
-                {/* Controls Section - Fixed Width */}
-                <div className="flex items-center space-x-2 flex-shrink-0">
-                  {renderMiniControl('regular', quantities.regular, consolidatedCard.variants.regular !== null, 'R')}
-                  {renderMiniControl('foil', quantities.foil, consolidatedCard.variants.foil !== null, 'F')}
-                  {hasEnchanted && renderMiniControl('enchanted', quantities.enchanted, true, 'E')}
-                  {hasSpecial && renderMiniControl('special', quantities.special, true, 'S')}
-                  
-                  {/* Total */}
-                  <div className="ml-2 pl-2 border-l border-gray-400">
-                    <span className="font-semibold text-gray-700">T:{totalOwned}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <CardListView
+          cards={paginatedCards}
+          onQuantityChange={handleVariantQuantityChange}
+          getVariantQuantities={getVariantQuantities}
+          staleCardIds={staleCardIds}
+          rarityIconMap={rarityIconMap}
+          colorIconMap={colorIconMap}
+          sets={sets}
+        />
       )}
 
-      {groupBy === 'none' && totalPages > 1 && (
+      {groupBy === 'none' && pagination.totalPages > 1 && (
         <div className="flex justify-center items-center space-x-4 mt-8">
           <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
+            onClick={pagination.goToPrevPage}
+            disabled={pagination.currentPage === 1}
             className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 hover:bg-gray-50 transition-colors"
           >
             <ChevronLeft size={16} />
@@ -1069,24 +532,24 @@ const CardBrowser: React.FC = () => {
           </button>
           
           <div className="flex items-center space-x-2">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
               let pageNum: number;
-              if (totalPages <= 5) {
+              if (pagination.totalPages <= 5) {
                 pageNum = i + 1;
-              } else if (currentPage <= 3) {
+              } else if (pagination.currentPage <= 3) {
                 pageNum = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
+              } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                pageNum = pagination.totalPages - 4 + i;
               } else {
-                pageNum = currentPage - 2 + i;
+                pageNum = pagination.currentPage - 2 + i;
               }
               
               return (
                 <button
                   key={pageNum}
-                  onClick={() => setCurrentPage(pageNum)}
+                  onClick={() => pagination.setCurrentPage(pageNum)}
                   className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                    pageNum === currentPage
+                    pageNum === pagination.currentPage
                       ? 'bg-blue-600 text-white'
                       : 'border border-gray-300 hover:bg-gray-50'
                   }`}
@@ -1098,8 +561,8 @@ const CardBrowser: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
+            onClick={pagination.goToNextPage}
+            disabled={pagination.currentPage === pagination.totalPages}
             className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 hover:bg-gray-50 transition-colors"
           >
             <span>Next</span>
