@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Grid, List, ChevronLeft, ChevronRight, Filter, RotateCcw, ChevronDown, ChevronUp, X, Plus, Minus } from 'lucide-react';
+import { Search, Grid, List, ChevronLeft, ChevronRight, Filter, RotateCcw, X } from 'lucide-react';
 import { FilterOptions, SortOption, ConsolidatedCard } from '../types';
 import { consolidatedCards, rarityOrder, rarities, colors, cardTypes, stories, subtypes, costs, sets, costRange, strengthRange, willpowerRange, loreRange } from '../data/allCards';
 import { useCollection } from '../contexts/CollectionContext';
@@ -7,299 +7,8 @@ import { consolidatedCardMatchesFilters } from '../utils/cardConsolidation';
 import ConsolidatedCardComponent from './ConsolidatedCard';
 import MultiSelectFilter from './MultiSelectFilter';
 import RangeFilter from './RangeFilter';
+import { CollectionFilter, InkwellFilter, SpecialVariantsFilter } from './filters';
 
-interface CollectionFilterProps {
-  inMyCollection: boolean | null;
-  cardCountOperator: 'eq' | 'gte' | 'lte' | null;
-  cardCountValue: number;
-  onChange: (inMyCollection: boolean | null, cardCountOperator: 'eq' | 'gte' | 'lte' | null, cardCountValue: number) => void;
-  defaultCollapsed?: boolean;
-}
-
-const CollectionFilter: React.FC<CollectionFilterProps> = ({
-  inMyCollection,
-  cardCountOperator,
-  cardCountValue,
-  onChange,
-  defaultCollapsed = false
-}) => {
-  const [isExpanded, setIsExpanded] = useState(!defaultCollapsed);
-  const hasFilter = inMyCollection !== null || cardCountOperator !== null;
-
-  const handleClear = () => {
-    onChange(null, null, 1);
-  };
-
-  return (
-    <div className="border border-gray-200 rounded-lg bg-white">
-      <div 
-        className="flex justify-between items-center p-3 cursor-pointer hover:bg-gray-50"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center space-x-2">
-          <h3 className="font-medium text-gray-900">Collection</h3>
-          {hasFilter && (
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-              Active
-            </span>
-          )}
-        </div>
-        <div className="flex items-center space-x-2">
-          {hasFilter && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleClear();
-              }}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              title="Clear filter"
-            >
-              <X size={16} />
-            </button>
-          )}
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </div>
-      </div>
-      
-      {isExpanded && (
-        <div className="border-t border-gray-200 p-3">
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="collection"
-                  checked={inMyCollection === null}
-                  onChange={() => onChange(null, cardCountOperator, cardCountValue)}
-                  className="text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">All Cards</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="collection"
-                  checked={inMyCollection === true}
-                  onChange={() => onChange(true, cardCountOperator, cardCountValue)}
-                  className="text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">In My Collection</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="collection"
-                  checked={inMyCollection === false}
-                  onChange={() => onChange(false, cardCountOperator, cardCountValue)}
-                  className="text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Not In My Collection</span>
-              </label>
-            </div>
-            
-            <div className="border-t border-gray-200 pt-3">
-              <h4 className="font-medium text-gray-900 mb-2 text-sm">Card Count</h4>
-              <div className="flex items-center space-x-2">
-                <select
-                  value={cardCountOperator || ''}
-                  onChange={(e) => onChange(
-                    inMyCollection,
-                    e.target.value === '' ? null : e.target.value as 'eq' | 'gte' | 'lte',
-                    cardCountValue
-                  )}
-                  className="text-xs px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Any</option>
-                  <option value="eq">Exactly</option>
-                  <option value="gte">At least</option>
-                  <option value="lte">At most</option>
-                </select>
-                <input
-                  type="number"
-                  min="0"
-                  max="20"
-                  value={cardCountValue}
-                  onChange={(e) => onChange(inMyCollection, cardCountOperator, parseInt(e.target.value) || 0)}
-                  disabled={cardCountOperator === null}
-                  className="w-16 text-xs px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-400"
-                />
-                <span className="text-xs text-gray-600">copies</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-interface InkwellFilterProps {
-  inkwellOnly: boolean | null;
-  onChange: (inkwellOnly: boolean | null) => void;
-  defaultCollapsed?: boolean;
-}
-
-const InkwellFilter: React.FC<InkwellFilterProps> = ({
-  inkwellOnly,
-  onChange,
-  defaultCollapsed = false
-}) => {
-  const [isExpanded, setIsExpanded] = useState(!defaultCollapsed);
-  const hasFilter = inkwellOnly !== null;
-
-  const handleClear = () => {
-    onChange(null);
-  };
-
-  return (
-    <div className="border border-gray-200 rounded-lg bg-white">
-      <div 
-        className="flex justify-between items-center p-3 cursor-pointer hover:bg-gray-50"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center space-x-2">
-          <h3 className="font-medium text-gray-900">Inkwell</h3>
-          {hasFilter && (
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-              {inkwellOnly ? 'Inkable' : 'Non-Inkable'}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center space-x-2">
-          {hasFilter && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleClear();
-              }}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              title="Clear filter"
-            >
-              <X size={16} />
-            </button>
-          )}
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </div>
-      </div>
-      
-      {isExpanded && (
-        <div className="border-t border-gray-200 p-3">
-          <div className="space-y-2">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="inkwell"
-                checked={inkwellOnly === null}
-                onChange={() => onChange(null)}
-                className="text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700">All Cards</span>
-            </label>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="inkwell"
-                checked={inkwellOnly === true}
-                onChange={() => onChange(true)}
-                className="text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700">Inkable Only</span>
-            </label>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                name="inkwell"
-                checked={inkwellOnly === false}
-                onChange={() => onChange(false)}
-                className="text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700">Non-Inkable Only</span>
-            </label>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-interface SpecialVariantsFilterProps {
-  hasEnchanted: boolean | null;
-  hasSpecial: boolean | null;
-  onChange: (hasEnchanted: boolean | null, hasSpecial: boolean | null) => void;
-  defaultCollapsed?: boolean;
-}
-
-const SpecialVariantsFilter: React.FC<SpecialVariantsFilterProps> = ({
-  hasEnchanted,
-  hasSpecial,
-  onChange,
-  defaultCollapsed = false
-}) => {
-  const [isExpanded, setIsExpanded] = useState(!defaultCollapsed);
-  const hasFilter = hasEnchanted !== null || hasSpecial !== null;
-
-  const handleClear = () => {
-    onChange(null, null);
-  };
-
-  return (
-    <div className="border border-gray-200 rounded-lg bg-white">
-      <div 
-        className="flex justify-between items-center p-3 cursor-pointer hover:bg-gray-50"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center space-x-2">
-          <h3 className="font-medium text-gray-900">Special Variants</h3>
-          {hasFilter && (
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-              {[hasEnchanted && 'E', hasSpecial && 'S'].filter(Boolean).join(', ')}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center space-x-2">
-          {hasFilter && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleClear();
-              }}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              title="Clear filter"
-            >
-              <X size={16} />
-            </button>
-          )}
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </div>
-      </div>
-      
-      {isExpanded && (
-        <div className="border-t border-gray-200 p-3">
-          <div className="space-y-2">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={hasEnchanted === true}
-                onChange={(e) => onChange(e.target.checked ? true : null, hasSpecial)}
-                className="text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700">Has Enchanted Version</span>
-            </label>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={hasSpecial === true}
-                onChange={(e) => onChange(hasEnchanted, e.target.checked ? true : null)}
-                className="text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700">Has Special Version</span>
-            </label>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 const CardBrowser: React.FC = () => {
   const { getVariantQuantities, getCardQuantity, addVariantToCollection, removeVariantFromCollection } = useCollection();
@@ -325,58 +34,16 @@ const CardBrowser: React.FC = () => {
     'Steel': '/imgs/steel.svg'
   };
   
-  // Get background gradient based on ink color(s)
-  const getInkColorBackground = (color: string): { className: string; style?: React.CSSProperties } => {
-    // Official Lorcana ink colors
-    const officialColors: Record<string, string> = {
-      'Amber': '#F5B202',
-      'Amethyst': '#81377B',
-      'Emerald': '#2A8934',
-      'Ruby': '#D3082F',
-      'Sapphire': '#0189C4',
-      'Steel': '#9FA8B4'
-    };
-    
-    // Check for dual colors (e.g., "Amber-Ruby")
-    if (color.includes('-')) {
-      const [color1, color2] = color.split('-');
-      
-      const color1Hex = officialColors[color1] || '#6b7280';
-      const color2Hex = officialColors[color2] || '#6b7280';
-      
-      console.log(`Dual-ink gradient for ${color}: ${color1Hex} to ${color2Hex}`);
-      
-      return {
-        className: '',
-        style: {
-          background: `linear-gradient(to right, ${color1Hex}, ${color2Hex})`
-        }
-      };
-    }
-    
-    // Single colors - use inline styles with official colors
-    if (officialColors[color]) {
-      return {
-        className: '',
-        style: {
-          background: officialColors[color]
-        }
-      };
-    }
-    
-    // No ink color fallback
-    return { 
-      className: '',
-      style: {
-        background: '#f9fafb' // light gray for no ink color
-      }
-    };
-  };
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<SortOption>({ field: 'name', direction: 'asc' });
   const [groupBy, setGroupBy] = useState<string>('none');
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Filter state memory for handling cards that no longer match filters
+  const [staleCardIds, setStaleCardIds] = useState<Set<number>>(new Set());
+  const [showFilterNotification, setShowFilterNotification] = useState(false);
+  const [staleCardCount, setStaleCardCount] = useState(0);
   const cardsPerPage = 100;
   // Get default set codes for the desired sets
   const defaultSetCodes = sets
@@ -415,6 +82,12 @@ const CardBrowser: React.FC = () => {
   const { filteredAndSortedCards, groupedCards, totalPages, totalCards, activeFiltersCount } = useMemo(() => {
     let filtered = consolidatedCards.filter(consolidatedCard => {
       const { baseCard } = consolidatedCard;
+      
+      // If this card is in our stale cards set, always include it
+      if (staleCardIds.has(baseCard.id)) {
+        console.log('Including stale card:', baseCard.name);
+        return true;
+      }
       
       const matchesSearch = baseCard.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (baseCard.version?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
@@ -607,12 +280,19 @@ const CardBrowser: React.FC = () => {
       totalCards,
       activeFiltersCount
     };
-  }, [searchTerm, filters, sortBy, groupBy, currentPage, cardsPerPage, getVariantQuantities, getCardQuantity]);
+  }, [searchTerm, filters, sortBy, groupBy, currentPage, cardsPerPage, getVariantQuantities, getCardQuantity, staleCardIds]);
 
   // Reset to page 1 when search or filters change
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filters, sortBy, groupBy]);
+
+  // Clear stale cards when filters change (user is intentionally refreshing)
+  React.useEffect(() => {
+    setStaleCardIds(new Set());
+    setShowFilterNotification(false);
+    setStaleCardCount(0);
+  }, [filters, searchTerm, sortBy, groupBy]);
 
   const clearAllFilters = () => {
     setFilters({
@@ -647,10 +327,64 @@ const CardBrowser: React.FC = () => {
     variantType: 'regular' | 'foil' | 'enchanted' | 'special', 
     change: number
   ) => {
+    // Get current quantities before the change (for potential future use)
+    // const currentQuantities = getVariantQuantities(consolidatedCard.fullName);
+    // const currentTotal = currentQuantities.regular + currentQuantities.foil + currentQuantities.enchanted + currentQuantities.special;
+    // const currentLegacyQuantity = getCardQuantity(consolidatedCard.baseCard.id);
+    // const currentTotalOwned = currentTotal + currentLegacyQuantity;
+    
+    // Apply the change
     if (change > 0) {
       addVariantToCollection(consolidatedCard, variantType, change);
     } else {
       removeVariantFromCollection(consolidatedCard.fullName, variantType, Math.abs(change));
+    }
+    
+    // Check if this card would now be filtered out due to collection filters
+    if (filters.inMyCollection !== null) {
+      console.log('Checking if card would be filtered out...', {
+        cardName: consolidatedCard.baseCard.name,
+        filter: filters.inMyCollection,
+        change
+      });
+      
+      // Get current quantities before the change to predict future state
+      const currentQuantities = getVariantQuantities(consolidatedCard.fullName);
+      const currentTotal = currentQuantities.regular + currentQuantities.foil + currentQuantities.enchanted + currentQuantities.special;
+      const currentLegacyQuantity = getCardQuantity(consolidatedCard.baseCard.id);
+      const currentTotalOwned = currentTotal + currentLegacyQuantity;
+      
+      // Predict what the state will be after this change
+      const predictedTotalOwned = currentTotalOwned + change;
+      const willBeInCollection = predictedTotalOwned > 0;
+      
+      // Check if card would be filtered out after the change
+      const wouldBeFilteredOut = (
+        (filters.inMyCollection === true && !willBeInCollection) ||  // Filter wants "in collection" but card will not be in collection
+        (filters.inMyCollection === false && willBeInCollection)     // Filter wants "not in collection" but card will be in collection
+      );
+      
+      console.log('Stale card prediction:', {
+        cardName: consolidatedCard.baseCard.name,
+        currentTotalOwned,
+        change,
+        predictedTotalOwned,
+        willBeInCollection,
+        filterWantsInCollection: filters.inMyCollection,
+        wouldBeFilteredOut,
+        currentStaleIds: Array.from(staleCardIds)
+      });
+      
+      if (wouldBeFilteredOut && !staleCardIds.has(consolidatedCard.baseCard.id)) {
+        console.log('Adding card to stale list:', consolidatedCard.baseCard.name);
+        setStaleCardIds(prev => {
+          const newSet = new Set(prev);
+          newSet.add(consolidatedCard.baseCard.id);
+          return newSet;
+        });
+        setStaleCardCount(prev => prev + 1);
+        setShowFilterNotification(true);
+      }
     }
   };
 
@@ -711,6 +445,22 @@ const CardBrowser: React.FC = () => {
               <option value="story">Group by Story</option>
               <option value="cost">Group by Cost</option>
             </select>
+            <button
+              onClick={() => {
+                setStaleCardIds(new Set());
+                setShowFilterNotification(false);
+                setStaleCardCount(0);
+              }}
+              disabled={!showFilterNotification}
+              className={`px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                showFilterNotification 
+                  ? 'hover:bg-blue-50 text-blue-600 border-blue-300 bg-blue-50' 
+                  : 'text-gray-400 cursor-not-allowed'
+              }`}
+              title={showFilterNotification ? 'Refresh view to apply current filters' : 'No stale cards to refresh'}
+            >
+              <RotateCcw size={20} />
+            </button>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center space-x-2 ${
@@ -1354,6 +1104,39 @@ const CardBrowser: React.FC = () => {
           >
             <span>Next</span>
             <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Filter notification bubble */}
+      {showFilterNotification && (
+        <div className="fixed bottom-4 right-4 bg-white border border-orange-200 rounded-lg shadow-lg p-4 max-w-sm z-50">
+          <div className="flex justify-between items-start mb-3">
+            <div className="flex items-center space-x-2">
+              <span className="text-orange-500">⚠️</span>
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {staleCardCount} card{staleCardCount !== 1 ? 's' : ''} no longer match
+                </p>
+                <p className="text-xs text-gray-600">your current filters</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowFilterNotification(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors ml-2"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              setStaleCardIds(new Set());
+              setShowFilterNotification(false);
+              setStaleCardCount(0);
+            }}
+            className="w-full px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Refresh View
           </button>
         </div>
       )}
