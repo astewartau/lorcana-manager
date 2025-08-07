@@ -1,19 +1,25 @@
 import React, { useState, useRef } from 'react';
 import { Plus, Minus } from 'lucide-react';
-import { ConsolidatedCard } from '../types';
+import { ConsolidatedCard } from '../../types';
 
-interface ConsolidatedCardProps {
+interface DeckBuilderCardProps {
   consolidatedCard: ConsolidatedCard;
-  quantities: { regular: number; foil: number; enchanted: number; special: number };
-  onQuantityChange: (variantType: 'regular' | 'foil' | 'enchanted' | 'special', change: number) => void;
+  deckQuantity: number;
+  collectionQuantity: number;
+  onAddCard: (card: ConsolidatedCard) => void;
+  onRemoveCard: (cardId: number) => void;
+  canAdd: boolean;
 }
 
-const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({ 
+const DeckBuilderCard: React.FC<DeckBuilderCardProps> = ({ 
   consolidatedCard, 
-  quantities,
-  onQuantityChange 
+  deckQuantity,
+  collectionQuantity,
+  onAddCard,
+  onRemoveCard,
+  canAdd
 }) => {
-  const { baseCard, variants, hasEnchanted, hasSpecial } = consolidatedCard;
+  const { baseCard, hasEnchanted, hasSpecial } = consolidatedCard;
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [transform, setTransform] = useState('');
@@ -51,53 +57,9 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
     setLightPosition({ x: 50, y: 50 });
   };
 
-  const getVariantBackground = (variantType: 'regular' | 'foil' | 'enchanted' | 'special') => {
-    switch (variantType) {
-      case 'regular':
-        return 'bg-gray-100 border-gray-200';
-      case 'foil':
-        return 'bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 border-blue-300';
-      case 'enchanted':
-        return 'bg-gradient-to-r from-red-200 via-yellow-200 via-green-200 via-blue-200 to-purple-200 border-purple-300';
-      case 'special':
-        return 'bg-gradient-to-r from-yellow-200 via-orange-200 to-yellow-300 border-orange-300';
-      default:
-        return 'bg-gray-100 border-gray-200';
-    }
-  };
-
-  const renderQuantityControl = (
-    variantType: 'regular' | 'foil' | 'enchanted' | 'special',
-    quantity: number,
-    isAvailable: boolean
-  ) => {
-    if (!isAvailable) return null;
-
-    return (
-      <div className={`flex items-center justify-between px-2 py-1 rounded-md border ${getVariantBackground(variantType)} transition-all`}>
-        <button
-          onClick={() => onQuantityChange(variantType, -1)}
-          disabled={quantity <= 0}
-          className="p-0.5 rounded text-red-600 hover:text-red-800 transition-colors disabled:text-gray-400"
-        >
-          <Minus size={10} />
-        </button>
-        <span className="font-semibold text-xs min-w-[1rem] text-center text-gray-800">
-          {quantity}
-        </span>
-        <button
-          onClick={() => onQuantityChange(variantType, 1)}
-          className="p-0.5 rounded text-green-600 hover:text-green-800 transition-colors"
-        >
-          <Plus size={10} />
-        </button>
-      </div>
-    );
-  };
-
   return (
     <div className="flex flex-col space-y-2">
-      {/* Card Image */}
+      {/* Card Image with tilt effect */}
       <div 
         ref={cardRef}
         className="relative rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 ease-out aspect-[2.5/3.5] overflow-hidden cursor-pointer transform-gpu select-none"
@@ -141,17 +103,41 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
             </div>
           )}
         </div>
+
+        {/* Max copies indicator */}
+        {deckQuantity >= 4 && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <span className="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">
+              MAX
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Quantity controls below card - all in one centered row */}
-      <div className="flex justify-center space-x-1">
-        {renderQuantityControl('regular', quantities.regular, variants.regular !== null)}
-        {renderQuantityControl('foil', quantities.foil, variants.foil !== null)}
-        {hasEnchanted && renderQuantityControl('enchanted', quantities.enchanted, true)}
-        {hasSpecial && renderQuantityControl('special', quantities.special, true)}
+      {/* Deck Controls - Below Card */}
+      <div className="flex items-center justify-between px-2 py-1 bg-gray-50 rounded-md border border-gray-200">
+        <button
+          onClick={() => onRemoveCard(baseCard.id)}
+          disabled={deckQuantity <= 0}
+          className="w-6 h-6 flex items-center justify-center text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors rounded"
+        >
+          <Minus size={12} />
+        </button>
+        
+        <span className="text-sm font-semibold text-gray-800">
+          {deckQuantity}{collectionQuantity > 0 ? `/${Math.min(collectionQuantity, 4)}` : ''}
+        </span>
+        
+        <button
+          onClick={() => onAddCard(consolidatedCard)}
+          disabled={!canAdd}
+          className="w-6 h-6 flex items-center justify-center text-green-600 hover:text-green-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors rounded"
+        >
+          <Plus size={12} />
+        </button>
       </div>
     </div>
   );
 };
 
-export default ConsolidatedCardComponent;
+export default DeckBuilderCard;
