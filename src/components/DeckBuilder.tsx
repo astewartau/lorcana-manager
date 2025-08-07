@@ -220,7 +220,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
                   </select>
 
                   <button
-                    onClick={() => setShowFilters(!showFilters)}
+                      onClick={() => setShowFilters(!showFilters)}
                     className={`px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center space-x-2 ${
                       activeFiltersCount > 0 ? 'bg-blue-50 border-blue-300' : ''
                     }`}
@@ -340,6 +340,15 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
               />
             </div>
           </div>
+
+          {/* Deck Panel */}
+          <DeckPanel
+            deck={currentDeck}
+            onRemoveCard={handleRemoveCard}
+            onUpdateQuantity={updateCardQuantity}
+            onClearDeck={clearDeck}
+            validation={validation}
+          />
         </div>
       </div>
     </div>

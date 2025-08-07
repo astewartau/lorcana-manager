@@ -137,7 +137,6 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
     return a.localeCompare(b);
   });
 
-
   const getInkColorHex = (color: string) => {
     switch (color) {
       case 'Amber': return '#fbbf24'; // yellow-400
