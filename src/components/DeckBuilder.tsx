@@ -1,332 +1,348 @@
-import React, { useState, useMemo } from 'react';
-import { Minus, Trash2, Search, FileText } from 'lucide-react';
-import { Deck, LorcanaCard } from '../types';
-import { allCards, colors } from '../data/allCards';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ArrowLeft, Search, Grid, List, Filter, Save } from 'lucide-react';
+import { FilterOptions, SortOption, ConsolidatedCard } from '../types';
+import { consolidatedCards, sets, costRange, strengthRange, willpowerRange, loreRange, colors } from '../data/allCards';
+import { useDeck } from '../contexts/DeckContext';
+import { useCollection } from '../contexts/CollectionContext';
+import FilterPanel from './shared/FilterPanel';
+import { filterCards, sortCards, countActiveFilters } from '../utils/cardFiltering';
+import DeckPanel from './deck/DeckPanel';
+import DeckBuilderCardGrid from './deck/DeckBuilderCardGrid';
+import DeckBuilderCardList from './deck/DeckBuilderCardList';
 
-const DeckBuilder: React.FC = () => {
-  const [decks, setDecks] = useState<Deck[]>([
-    {
-      id: '1',
-      name: 'Ruby/Sapphire Control',
-      description: 'A control deck focusing on Ruby and Sapphire characters',
-      cards: [
-        { ...allCards[0], quantity: 2 },
-        { ...allCards[1], quantity: 1 },
-      ],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ]);
-  const [activeDeck, setActiveDeck] = useState<Deck | null>(decks[0] || null);
+interface DeckBuilderProps {
+  onBack: () => void;
+}
+
+const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
+  const { currentDeck, updateDeck, addCardToDeck, removeCardFromDeck, updateCardQuantity, validateDeck } = useDeck();
+  const { getVariantQuantities, getCardQuantity } = useCollection();
+  
   const [searchTerm, setSearchTerm] = useState('');
-  const [showNewDeckForm, setShowNewDeckForm] = useState(false);
-  const [newDeckName, setNewDeckName] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortBy, setSortBy] = useState<SortOption>({ field: 'name', direction: 'asc' });
+  const [showFilters, setShowFilters] = useState(false);
+  const [deckName, setDeckName] = useState(currentDeck?.name || '');
 
-  const filteredCards = useMemo(() => {
-    return allCards.filter(card =>
-      card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (card.version?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-    );
-  }, [searchTerm]);
+  // Get default set codes for the desired sets
+  const defaultSetCodes = sets
+    .filter(s => ['Shimmering Skies', 'Azurite Sea', "Archazia's Island", 'The Reign of Jafar', 'Fabled'].includes(s.name))
+    .map(s => s.code);
+  
+  const nonEmptyColors = colors.filter(color => color);
 
-  const createNewDeck = () => {
-    if (!newDeckName.trim()) return;
-    
-    const newDeck: Deck = {
-      id: Date.now().toString(),
-      name: newDeckName,
-      description: '',
-      cards: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    setDecks(prev => [...prev, newDeck]);
-    setActiveDeck(newDeck);
-    setNewDeckName('');
-    setShowNewDeckForm(false);
+  const [filters, setFilters] = useState<FilterOptions>({
+    search: '',
+    sets: defaultSetCodes,
+    colors: nonEmptyColors,
+    rarities: [],
+    types: [],
+    stories: [],
+    subtypes: [],
+    costs: [],
+    costMin: costRange.min,
+    costMax: costRange.max,
+    strengthMin: strengthRange.min,
+    strengthMax: strengthRange.max,
+    willpowerMin: willpowerRange.min,
+    willpowerMax: willpowerRange.max,
+    loreMin: loreRange.min,
+    loreMax: loreRange.max,
+    inkwellOnly: null,
+    hasEnchanted: null,
+    hasSpecial: null,
+    inMyCollection: null,
+    cardCountOperator: null,
+    cardCountValue: 1,
+  });
+
+  // Icon mappings for filters  
+  const rarityIconMap: Record<string, string> = {
+    'Common': '/imgs/common.svg',
+    'Uncommon': '/imgs/uncommon.svg',
+    'Rare': '/imgs/rare.svg',
+    'Super Rare': '/imgs/super_rare.svg',
+    'Legendary': '/imgs/legendary.svg',
+    'Enchanted': '/imgs/enchanted.png',
+    'Special': '/imgs/promo.webp'
+  };
+  
+  const colorIconMap: Record<string, string> = {
+    'Amber': '/imgs/amber.svg',
+    'Amethyst': '/imgs/amethyst.svg',
+    'Emerald': '/imgs/emerald.svg',
+    'Ruby': '/imgs/ruby.svg',
+    'Sapphire': '/imgs/sapphire.svg',
+    'Steel': '/imgs/steel.svg'
   };
 
-  const deleteDeck = (deckId: string) => {
-    setDecks(prev => prev.filter(d => d.id !== deckId));
-    if (activeDeck?.id === deckId) {
-      const remaining = decks.filter(d => d.id !== deckId);
-      setActiveDeck(remaining[0] || null);
+  // Update deck name in state when current deck changes
+  useEffect(() => {
+    if (currentDeck) {
+      setDeckName(currentDeck.name);
     }
+  }, [currentDeck]);
+
+  // Get card quantity in current deck
+  const getCardQuantityInDeck = (cardId: number): number => {
+    if (!currentDeck) return 0;
+    const deckCard = currentDeck.cards.find(c => c.id === cardId);
+    return deckCard?.quantity || 0;
   };
 
-  const addCardToDeck = (card: LorcanaCard) => {
-    if (!activeDeck) return;
-
-    const existingCard = activeDeck.cards.find(c => c.id === card.id);
-    const currentQuantity = existingCard?.quantity || 0;
+  // Filter and sort cards
+  const { sortedCards, activeFiltersCount } = useMemo(() => {
+    const filtered = filterCards(consolidatedCards, searchTerm, filters, new Set(), getVariantQuantities, getCardQuantity);
+    const sorted = sortCards(filtered, sortBy);
+    const activeCount = countActiveFilters(filters);
     
-    if (currentQuantity >= 4) return; // Lorcana deck limit
-
-    const updatedDeck: Deck = {
-      ...activeDeck,
-      cards: existingCard
-        ? activeDeck.cards.map(c =>
-            c.id === card.id ? { ...c, quantity: c.quantity + 1 } : c
-          )
-        : [...activeDeck.cards, { ...card, quantity: 1 }],
-      updatedAt: new Date(),
+    return {
+      sortedCards: sorted,
+      activeFiltersCount: activeCount
     };
+  }, [searchTerm, filters, sortBy, getVariantQuantities, getCardQuantity]);
 
-    setActiveDeck(updatedDeck);
-    setDecks(prev => prev.map(d => d.id === activeDeck.id ? updatedDeck : d));
-  };
-
-  const removeCardFromDeck = (cardId: number) => {
-    if (!activeDeck) return;
-
-    const updatedDeck: Deck = {
-      ...activeDeck,
-      cards: activeDeck.cards
-        .map(c => c.id === cardId ? { ...c, quantity: c.quantity - 1 } : c)
-        .filter(c => c.quantity > 0),
-      updatedAt: new Date(),
-    };
-
-    setActiveDeck(updatedDeck);
-    setDecks(prev => prev.map(d => d.id === activeDeck.id ? updatedDeck : d));
-  };
-
-  const getTotalCards = (deck: Deck) => {
-    return deck.cards.reduce((sum, card) => sum + card.quantity, 0);
-  };
-
-  const getInkDistribution = (deck: Deck) => {
-    const distribution: Record<string, number> = {};
-    colors.forEach(color => {
-      distribution[color] = deck.cards
-        .filter(card => card.color === color)
-        .reduce((sum, card) => sum + card.quantity, 0);
+  const clearAllFilters = () => {
+    setFilters({
+      search: '',
+      sets: defaultSetCodes,
+      colors: nonEmptyColors,
+      rarities: [],
+      types: [],
+      stories: [],
+      subtypes: [],
+      costs: [],
+      costMin: costRange.min,
+      costMax: costRange.max,
+      strengthMin: strengthRange.min,
+      strengthMax: strengthRange.max,
+      willpowerMin: willpowerRange.min,
+      willpowerMax: willpowerRange.max,
+      loreMin: loreRange.min,
+      loreMax: loreRange.max,
+      inkwellOnly: null,
+      hasEnchanted: null,
+      hasSpecial: null,
+      inMyCollection: null,
+      cardCountOperator: null,
+      cardCountValue: 1,
     });
-    return distribution;
+    setSearchTerm('');
   };
 
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case 'Common': return 'text-gray-600';
-      case 'Uncommon': return 'text-green-600';
-      case 'Rare': return 'text-blue-600';
-      case 'Super Rare': return 'text-purple-600';
-      case 'Legendary': return 'text-orange-600';
-      case 'Enchanted': return 'text-pink-600';
-      default: return 'text-gray-600';
+  const handleAddCard = (card: ConsolidatedCard) => {
+    addCardToDeck(card.baseCard);
+  };
+
+  const handleRemoveCard = (cardId: number) => {
+    removeCardFromDeck(cardId);
+  };
+
+  const canAddCard = (deckQuantity: number): boolean => {
+    if (!currentDeck) return false;
+    const totalCards = currentDeck.cards.reduce((sum, c) => sum + c.quantity, 0);
+    return deckQuantity < 4 && totalCards < 60;
+  };
+
+  // Get total collection quantity for a card (all variants combined)
+  const getCollectionQuantity = (consolidatedCard: ConsolidatedCard): number => {
+    const variantQuantities = getVariantQuantities(consolidatedCard.fullName);
+    const legacyQuantity = getCardQuantity(consolidatedCard.baseCard.id);
+    return variantQuantities.regular + variantQuantities.foil + variantQuantities.enchanted + variantQuantities.special + legacyQuantity;
+  };
+
+  const handleUpdateName = () => {
+    if (currentDeck && deckName.trim() !== currentDeck.name) {
+      updateDeck({
+        ...currentDeck,
+        name: deckName.trim(),
+        updatedAt: new Date()
+      });
     }
   };
 
-  const getInkColorBg = (color: string) => {
-    switch (color) {
-      case 'Amber': return 'bg-yellow-100 text-yellow-800';
-      case 'Amethyst': return 'bg-purple-100 text-purple-800';
-      case 'Emerald': return 'bg-green-100 text-green-800';
-      case 'Ruby': return 'bg-red-100 text-red-800';
-      case 'Sapphire': return 'bg-blue-100 text-blue-800';
-      case 'Steel': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const handleSave = () => {
+    if (currentDeck) {
+      handleUpdateName();
+      // Could add additional save logic here
     }
   };
+
+  const clearDeck = () => {
+    if (currentDeck) {
+      updateDeck({
+        ...currentDeck,
+        cards: [],
+        updatedAt: new Date()
+      });
+    }
+  };
+
+  if (!currentDeck) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">No deck selected</h2>
+          <button
+            onClick={onBack}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Back to My Decks
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const validation = validateDeck(currentDeck);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 md:mb-0">Deck Builder</h2>
-          <div className="flex gap-2">
-            <select
-              value={activeDeck?.id || ''}
-              onChange={(e) => {
-                const deck = decks.find(d => d.id === e.target.value);
-                setActiveDeck(deck || null);
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select a deck</option>
-              {decks.map(deck => (
-                <option key={deck.id} value={deck.id}>
-                  {deck.name} ({getTotalCards(deck)} cards)
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => setShowNewDeckForm(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              New Deck
-            </button>
-          </div>
-        </div>
-
-        {showNewDeckForm && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <div className="flex gap-2">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <div className="max-w-full">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={onBack}
+                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft size={20} />
+                <span>Back to My Decks</span>
+              </button>
+              <div className="h-6 w-px bg-gray-300" />
               <input
                 type="text"
-                placeholder="Deck name"
-                value={newDeckName}
-                onChange={(e) => setNewDeckName(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                onKeyPress={(e) => e.key === 'Enter' && createNewDeck()}
+                value={deckName}
+                onChange={(e) => setDeckName(e.target.value)}
+                onBlur={handleUpdateName}
+                onKeyPress={(e) => e.key === 'Enter' && handleUpdateName()}
+                className="text-xl font-bold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0"
+                placeholder="Deck Name"
               />
+              <div className={`px-2 py-1 rounded text-sm font-medium ${
+                validation.isValid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}>
+                {validation.isValid ? 'Valid' : 'Invalid'}
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
               <button
-                onClick={createNewDeck}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                onClick={handleSave}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
               >
-                Create
-              </button>
-              <button
-                onClick={() => {
-                  setShowNewDeckForm(false);
-                  setNewDeckName('');
-                }}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Cancel
+                <Save size={16} />
+                <span>Save</span>
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      {activeDeck ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-gray-900">Add Cards</h3>
-                <div className="relative">
+        {/* Main Content */}
+        <div className="flex">
+          {/* Cards Panel */}
+          <div className="flex-1 p-6">
+            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+              <div className="flex flex-col md:flex-row gap-4 mb-4">
+                <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                   <input
                     type="text"
-                    placeholder="Search cards..."
+                    placeholder="Search cards by name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                {filteredCards.map((card) => {
-                  const inDeck = activeDeck.cards.find(c => c.id === card.id);
-                  const quantity = inDeck?.quantity || 0;
-                  const canAdd = quantity < 4;
-                  
-                  return (
-                    <div key={card.id} className="border border-gray-200 rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold text-gray-900">{card.name}</h4>
-                        <span className="text-lg font-bold text-blue-600">{card.cost}</span>
-                      </div>
-                      {card.version && (
-                        <p className="text-gray-600 text-sm mb-2">{card.version}</p>
-                      )}
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        <span className={`px-2 py-1 rounded text-xs ${getInkColorBg(card.color)}`}>
-                          {card.color}
-                        </span>
-                        <span className={`text-xs ${getRarityColor(card.rarity)}`}>
-                          {card.rarity}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
-                          In deck: {quantity}/4
-                        </span>
-                        <button
-                          onClick={() => addCardToDeck(card)}
-                          disabled={!canAdd}
-                          className={`px-3 py-1 rounded text-sm ${
-                            canAdd
-                              ? 'bg-blue-600 text-white hover:bg-blue-700'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          } transition-colors`}
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+                <div className="flex gap-2">
+                  <select
+                    value={`${sortBy.field}-${sortBy.direction}`}
+                    onChange={(e) => {
+                      const [field, direction] = e.target.value.split('-');
+                      setSortBy({ field: field as any, direction: direction as 'asc' | 'desc' });
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="name-asc">Name A-Z</option>
+                    <option value="name-desc">Name Z-A</option>
+                    <option value="cost-asc">Cost Low-High</option>
+                    <option value="cost-desc">Cost High-Low</option>
+                    <option value="rarity-asc">Rarity Low-High</option>
+                    <option value="rarity-desc">Rarity High-Low</option>
+                  </select>
 
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-gray-900">{activeDeck.name}</h3>
-                <button
-                  onClick={() => deleteDeck(activeDeck.id)}
-                  className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-              <div className="text-lg font-semibold text-gray-700 mb-4">
-                {getTotalCards(activeDeck)} / 60 cards
-              </div>
-              
-              <div className="mb-4">
-                <h4 className="font-semibold text-gray-900 mb-2">Ink Distribution</h4>
-                <div className="space-y-1">
-                  {Object.entries(getInkDistribution(activeDeck)).map(([color, count]) => (
-                    count > 0 && (
-                      <div key={color} className="flex justify-between items-center">
-                        <span className={`px-2 py-1 rounded text-xs ${getInkColorBg(color)}`}>
-                          {color}
-                        </span>
-                        <span className="text-sm font-medium">{count}</span>
-                      </div>
-                    )
-                  ))}
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center space-x-2 ${
+                      activeFiltersCount > 0 ? 'bg-blue-50 border-blue-300' : ''
+                    }`}
+                  >
+                    <Filter size={20} />
+                    {activeFiltersCount > 0 && (
+                      <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                        {activeFiltersCount}
+                      </span>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {viewMode === 'grid' ? <List size={20} /> : <Grid size={20} />}
+                  </button>
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <h4 className="font-semibold text-gray-900">Cards in Deck</h4>
-                {activeDeck.cards.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No cards in deck</p>
-                ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {activeDeck.cards.map((card) => (
-                      <div key={card.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{card.name}</div>
-                          <div className="text-xs text-gray-600">{card.cost} cost • {card.color}</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{card.quantity}</span>
-                          <button
-                            onClick={() => removeCardFromDeck(card.id)}
-                            className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
-                          >
-                            <Minus size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
+
+            {showFilters && (
+              <FilterPanel
+                filters={filters}
+                setFilters={setFilters}
+                activeFiltersCount={activeFiltersCount}
+                onClearAllFilters={clearAllFilters}
+                onClose={() => setShowFilters(false)}
+                rarityIconMap={rarityIconMap}
+                colorIconMap={colorIconMap}
+                showCollectionFilters={true}
+              />
+            )}
+
+            {/* Cards Display */}
+            {viewMode === 'grid' ? (
+              <DeckBuilderCardGrid
+                cards={sortedCards}
+                getCardQuantityInDeck={getCardQuantityInDeck}
+                getCollectionQuantity={getCollectionQuantity}
+                onAddCard={handleAddCard}
+                onRemoveCard={handleRemoveCard}
+                canAddCard={canAddCard}
+              />
+            ) : (
+              <DeckBuilderCardList
+                cards={sortedCards}
+                getCardQuantityInDeck={getCardQuantityInDeck}
+                getCollectionQuantity={getCollectionQuantity}
+                onAddCard={handleAddCard}
+                onRemoveCard={handleRemoveCard}
+                canAddCard={canAddCard}
+                colorIconMap={colorIconMap}
+                rarityIconMap={rarityIconMap}
+                sets={sets}
+              />
+            )}
           </div>
+
+          {/* Deck Panel */}
+          <DeckPanel
+            deck={currentDeck}
+            onRemoveCard={handleRemoveCard}
+            onUpdateQuantity={updateCardQuantity}
+            onClearDeck={clearDeck}
+            validation={validation}
+          />
         </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <FileText size={48} className="mx-auto text-gray-400 mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No deck selected</h3>
-          <p className="text-gray-600 mb-6">Create a new deck or select an existing one to start building.</p>
-          <button
-            onClick={() => setShowNewDeckForm(true)}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Create Your First Deck
-          </button>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

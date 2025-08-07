@@ -66,6 +66,18 @@ export interface Deck {
   updatedAt: Date;
 }
 
+export interface DeckSummary {
+  id: string;
+  name: string;
+  description?: string;
+  cardCount: number;
+  inkDistribution: Record<string, number>;
+  isValid: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+
 export interface FilterOptions {
   search: string;
   sets: string[];
