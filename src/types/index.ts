@@ -32,17 +32,18 @@ export interface CollectionCard extends LorcanaCard {
 }
 
 export interface ConsolidatedCard {
-  baseCard: LorcanaCard;  // Always the regular version for display
-  variants: {
-    regular: LorcanaCard | null;
-    foil: LorcanaCard | null; 
-    enchanted: LorcanaCard | null;
-    special: LorcanaCard[] | null; // Multiple special versions possible
-  };
+  baseCard: LorcanaCard;
   fullName: string;
+  hasRegular: boolean;
+  hasFoil: boolean;  
   hasEnchanted: boolean;
   hasSpecial: boolean;
+  regularCard?: LorcanaCard;
+  foilCard?: LorcanaCard;
+  enchantedCard?: LorcanaCard;
+  specialCards?: LorcanaCard[];
 }
+
 
 export interface CollectionCardVariants {
   cardId: number; // Base card ID

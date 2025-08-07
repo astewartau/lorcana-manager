@@ -13,7 +13,7 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
   quantities,
   onQuantityChange 
 }) => {
-  const { baseCard, variants, hasEnchanted, hasSpecial } = consolidatedCard;
+  const { baseCard, hasEnchanted, hasSpecial } = consolidatedCard;
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [transform, setTransform] = useState('');
@@ -145,8 +145,8 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
 
       {/* Quantity controls below card - all in one centered row */}
       <div className="flex justify-center space-x-1">
-        {renderQuantityControl('regular', quantities.regular, variants.regular !== null)}
-        {renderQuantityControl('foil', quantities.foil, variants.foil !== null)}
+        {renderQuantityControl('regular', quantities.regular, consolidatedCard.hasRegular)}
+        {renderQuantityControl('foil', quantities.foil, consolidatedCard.hasFoil)}
         {hasEnchanted && renderQuantityControl('enchanted', quantities.enchanted, true)}
         {hasSpecial && renderQuantityControl('special', quantities.special, true)}
       </div>

@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ArrowLeft, Search, Grid, List, Filter, Save } from 'lucide-react';
 import { FilterOptions, SortOption, ConsolidatedCard } from '../types';
-import { consolidatedCards, sets, costRange, strengthRange, willpowerRange, loreRange, colors } from '../data/allCards';
+import { consolidatedCards, sets } from '../data/allCards';
 import { useDeck } from '../contexts/DeckContext';
 import { useCollection } from '../contexts/CollectionContext';
 import FilterPanel from './shared/FilterPanel';
 import { filterCards, sortCards, countActiveFilters } from '../utils/cardFiltering';
+import { getDefaultFilters } from '../utils/filterDefaults';
 import DeckPanel from './deck/DeckPanel';
 import DeckBuilderCardGrid from './deck/DeckBuilderCardGrid';
 import DeckBuilderCardList from './deck/DeckBuilderCardList';
@@ -26,38 +27,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [deckName, setDeckName] = useState(currentDeck?.name || '');
 
-  // Get default set codes for the desired sets
-  const defaultSetCodes = sets
-    .filter(s => ['Shimmering Skies', 'Azurite Sea', "Archazia's Island", 'The Reign of Jafar', 'Fabled'].includes(s.name))
-    .map(s => s.code);
-  
-  const nonEmptyColors = colors.filter(color => color);
-
-  const [filters, setFilters] = useState<FilterOptions>({
-    search: '',
-    sets: defaultSetCodes,
-    colors: nonEmptyColors,
-    showAnyWithColors: true, // Default to inclusive mode
-    rarities: [],
-    types: [],
-    stories: [],
-    subtypes: [],
-    costs: [],
-    costMin: costRange.min,
-    costMax: costRange.max,
-    strengthMin: strengthRange.min,
-    strengthMax: strengthRange.max,
-    willpowerMin: willpowerRange.min,
-    willpowerMax: willpowerRange.max,
-    loreMin: loreRange.min,
-    loreMax: loreRange.max,
-    inkwellOnly: null,
-    hasEnchanted: null,
-    hasSpecial: null,
-    inMyCollection: null,
-    cardCountOperator: null,
-    cardCountValue: 1,
-  });
+  const [filters, setFilters] = useState<FilterOptions>(getDefaultFilters());
 
 
   // Update deck name in state when current deck changes
@@ -87,31 +57,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
   }, [searchTerm, filters, sortBy, getVariantQuantities, getCardQuantity]);
 
   const clearAllFilters = () => {
-    setFilters({
-      search: '',
-      sets: defaultSetCodes,
-      colors: nonEmptyColors,
-      showAnyWithColors: true, // Default to inclusive mode
-      rarities: [],
-      types: [],
-      stories: [],
-      subtypes: [],
-      costs: [],
-      costMin: costRange.min,
-      costMax: costRange.max,
-      strengthMin: strengthRange.min,
-      strengthMax: strengthRange.max,
-      willpowerMin: willpowerRange.min,
-      willpowerMax: willpowerRange.max,
-      loreMin: loreRange.min,
-      loreMax: loreRange.max,
-      inkwellOnly: null,
-      hasEnchanted: null,
-      hasSpecial: null,
-      inMyCollection: null,
-      cardCountOperator: null,
-      cardCountValue: 1,
-    });
+    setFilters(getDefaultFilters());
     setSearchTerm('');
   };
 

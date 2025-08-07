@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Grid, List, ChevronLeft, ChevronRight, Filter, RotateCcw, X } from 'lucide-react';
 import { FilterOptions, SortOption, ConsolidatedCard } from '../types';
-import { consolidatedCards, colors, sets, costRange, strengthRange, willpowerRange, loreRange } from '../data/allCards';
+import { consolidatedCards, sets } from '../data/allCards';
 import { useCollection } from '../contexts/CollectionContext';
 import FilterPanel from './shared/FilterPanel';
 import { CardGridView, CardListView, GroupedView } from './card-views';
 import { usePagination } from '../hooks';
 import { filterCards, sortCards, groupCards, countActiveFilters } from '../utils/cardFiltering';
+import { getDefaultFilters } from '../utils/filterDefaults';
 import QuickFilters from './QuickFilters';
 import { RARITY_ICONS, COLOR_ICONS } from '../constants/icons';
 
@@ -23,39 +24,7 @@ const CardBrowser: React.FC = () => {
   const [showFilterNotification, setShowFilterNotification] = useState(false);
   const [staleCardCount, setStaleCardCount] = useState(0);
   const cardsPerPage = 100;
-  // Get default set codes for the desired sets
-  const defaultSetCodes = sets
-    .filter(s => ['Shimmering Skies', 'Azurite Sea', "Archazia's Island", 'The Reign of Jafar', 'Fabled'].includes(s.name))
-    .map(s => s.code);
-  
-  // Get colors excluding empty string (manually filtering known colors)
-  const nonEmptyColors = colors.filter(color => color);
-
-  const [filters, setFilters] = useState<FilterOptions>({
-    search: '',
-    sets: defaultSetCodes,
-    colors: nonEmptyColors,
-    showAnyWithColors: true, // Default to inclusive mode
-    rarities: [],
-    types: [],
-    stories: [],
-    subtypes: [],
-    costs: [],
-    costMin: costRange.min,
-    costMax: costRange.max,
-    strengthMin: strengthRange.min,
-    strengthMax: strengthRange.max,
-    willpowerMin: willpowerRange.min,
-    willpowerMax: willpowerRange.max,
-    loreMin: loreRange.min,
-    loreMax: loreRange.max,
-    inkwellOnly: null,
-    hasEnchanted: null,
-    hasSpecial: null,
-    inMyCollection: null,
-    cardCountOperator: null,
-    cardCountValue: 1,
-  });
+  const [filters, setFilters] = useState<FilterOptions>(getDefaultFilters());
   const [showFilters, setShowFilters] = useState(false);
 
   // Filter and sort cards using utility functions
@@ -94,31 +63,7 @@ const CardBrowser: React.FC = () => {
   }, [filters, searchTerm, sortBy, groupBy]);
 
   const clearAllFilters = () => {
-    setFilters({
-      search: '',
-      sets: defaultSetCodes,
-      colors: nonEmptyColors,
-      showAnyWithColors: true, // Default to inclusive mode
-      rarities: [],
-      types: [],
-      stories: [],
-      subtypes: [],
-      costs: [],
-      costMin: costRange.min,
-      costMax: costRange.max,
-      strengthMin: strengthRange.min,
-      strengthMax: strengthRange.max,
-      willpowerMin: willpowerRange.min,
-      willpowerMax: willpowerRange.max,
-      loreMin: loreRange.min,
-      loreMax: loreRange.max,
-      inkwellOnly: null,
-      hasEnchanted: null,
-      hasSpecial: null,
-      inMyCollection: null,
-      cardCountOperator: null,
-      cardCountValue: 1,
-    });
+    setFilters(getDefaultFilters());
     setSearchTerm('');
   };
 

@@ -180,8 +180,8 @@ const CardListView: React.FC<CardListViewProps> = ({
             
             {/* Controls Section - Fixed Width */}
             <div className="flex items-center space-x-2 flex-shrink-0">
-              {renderMiniControl(consolidatedCard, 'regular', quantities.regular, consolidatedCard.variants.regular !== null, 'R')}
-              {renderMiniControl(consolidatedCard, 'foil', quantities.foil, consolidatedCard.variants.foil !== null, 'F')}
+              {renderMiniControl(consolidatedCard, 'regular', quantities.regular, consolidatedCard.hasRegular, 'R')}
+              {renderMiniControl(consolidatedCard, 'foil', quantities.foil, consolidatedCard.hasFoil, 'F')}
               {hasEnchanted && renderMiniControl(consolidatedCard, 'enchanted', quantities.enchanted, true, 'E')}
               {hasSpecial && renderMiniControl(consolidatedCard, 'special', quantities.special, true, 'S')}
               
