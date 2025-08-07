@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { Trash2, Minus, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import { Deck } from '../../types';
 import { useCollection } from '../../contexts/CollectionContext';
+import { COLOR_ICONS } from '../../constants/icons';
 
 interface DeckPanelProps {
   deck: Deck;
   onRemoveCard: (cardId: number) => void;
   onUpdateQuantity: (cardId: number, quantity: number) => void;
   onClearDeck: () => void;
+  onViewDeck?: () => void;
   validation: { isValid: boolean; errors: string[] };
+  isCollapsed?: boolean;
 }
 
 const DeckPanel: React.FC<DeckPanelProps> = ({
@@ -16,13 +19,14 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
   onRemoveCard,
   onUpdateQuantity,
   onClearDeck,
-  validation
+  onViewDeck,
+  validation,
+  isCollapsed = false
 }) => {
-  const { getVariantQuantities, getCardQuantity } = useCollection();
+  const { getVariantQuantities } = useCollection();
   const [groupBy, setGroupBy] = useState<'cost' | 'type' | 'color'>('cost');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [statisticsCollapsed, setStatisticsCollapsed] = useState(false);
-  const [cardsCollapsed, setCardsCollapsed] = useState(false);
+  const [activeTab, setActiveTab] = useState<'statistics' | 'cards'>('statistics');
   const [imagePreview, setImagePreview] = useState<{
     show: boolean;
     x: number;
@@ -93,9 +97,8 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
   const collectionDistribution = deck.cards.reduce((acc, card) => {
     // Check if card is in collection
     const variantQuantities = getVariantQuantities(card.fullName);
-    const legacyQuantity = getCardQuantity(card.id);
     const totalInCollection = variantQuantities.regular + variantQuantities.foil + 
-                             variantQuantities.enchanted + variantQuantities.special + legacyQuantity;
+                             variantQuantities.enchanted + variantQuantities.special;
     
     const key = totalInCollection > 0 ? 'In Collection' : 'Not in Collection';
     acc[key] = (acc[key] || 0) + card.quantity;
@@ -133,18 +136,6 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
     }
     return a.localeCompare(b);
   });
-
-  const getInkColorBg = (color: string) => {
-    switch (color) {
-      case 'Amber': return 'bg-yellow-400';
-      case 'Amethyst': return 'bg-purple-400';
-      case 'Emerald': return 'bg-green-400';
-      case 'Ruby': return 'bg-red-400';
-      case 'Sapphire': return 'bg-blue-400';
-      case 'Steel': return 'bg-gray-400';
-      default: return 'bg-gray-300';
-    }
-  };
 
   const getInkColorHex = (color: string) => {
     switch (color) {
@@ -324,9 +315,9 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
         </div>
       )}
 
-      <div className="w-80 bg-white shadow-lg border-l border-gray-200 flex flex-col h-screen">
+      <div className="w-full bg-white shadow-lg border-l border-gray-200 flex flex-col h-screen overflow-hidden">
         {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 flex-shrink-0">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-lg font-semibold text-gray-900">Deck Contents</h3>
           <button
@@ -370,22 +361,35 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
         )}
       </div>
 
-      {/* Statistics */}
-      <div className="border-b border-gray-200">
+      {/* Tab Navigation */}
+      <div className="flex border-b border-gray-200 flex-shrink-0">
         <button
-          onClick={() => setStatisticsCollapsed(!statisticsCollapsed)}
-          className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+          onClick={() => setActiveTab('statistics')}
+          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+            activeTab === 'statistics'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
         >
-          <h4 className="font-semibold text-sm text-gray-900">Statistics</h4>
-          {statisticsCollapsed ? (
-            <ChevronRight size={16} />
-          ) : (
-            <ChevronDown size={16} />
-          )}
+          Statistics
         </button>
-        
-        {!statisticsCollapsed && (
-          <div className="px-4 pb-4">
+        <button
+          onClick={() => setActiveTab('cards')}
+          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+            activeTab === 'cards'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Cards
+        </button>
+      </div>
+
+      {/* Tab Content - Scrollable Area */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Statistics Tab */}
+        {activeTab === 'statistics' && (
+          <div className="p-4">
         
         {/* Pie Charts */}
         <div className="grid grid-cols-2 gap-3 mb-4">
@@ -518,43 +522,25 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
         </div>
           </div>
         )}
-      </div>
 
-      {/* Card List */}
-      <div className={`overflow-hidden flex flex-col ${statisticsCollapsed ? 'flex-1' : 'flex-1'}`}>
-        <div className="border-b border-gray-200">
-          <button
-            onClick={() => setCardsCollapsed(!cardsCollapsed)}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-          >
-            <h4 className="font-semibold text-sm text-gray-900">Cards</h4>
-            <div className="flex items-center space-x-2">
-              {!cardsCollapsed && (
-                <select
-                  value={groupBy}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    setGroupBy(e.target.value as 'cost' | 'type' | 'color');
-                  }}
-                  className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <option value="cost">By Cost</option>
-                  <option value="type">By Type</option>
-                  <option value="color">By Color</option>
-                </select>
-              )}
-              {cardsCollapsed ? (
-                <ChevronRight size={16} />
-              ) : (
-                <ChevronDown size={16} />
-              )}
+        {/* Cards Tab */}
+        {activeTab === 'cards' && (
+          <div className="flex flex-col h-full">
+            {/* Group By Selector */}
+            <div className="p-4 border-b border-gray-200">
+              <select
+                value={groupBy}
+                onChange={(e) => setGroupBy(e.target.value as 'cost' | 'type' | 'color')}
+                className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="cost">Group by Cost</option>
+                <option value="type">Group by Type</option>
+                <option value="color">Group by Color</option>
+              </select>
             </div>
-          </button>
-        </div>
 
-        {!cardsCollapsed && (
-          <div className="flex-1 overflow-y-auto">
+            {/* Cards List */}
+            <div className="flex-1 overflow-y-auto px-4 pb-4">
             {deck.cards.length === 0 ? (
               <div className="p-4 text-center text-gray-500 text-sm">
                 No cards in deck. Start adding cards to build your deck!
@@ -623,8 +609,12 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
                                 )}
                                 <div className="flex items-center space-x-2 mt-1">
                                   <span className="text-xs font-bold text-blue-600">{card.cost}</span>
-                                  {card.color && (
-                                    <div className={`w-3 h-3 rounded-full ${getInkColorBg(card.color)}`} />
+                                  {card.color && COLOR_ICONS[card.color] && (
+                                    <img 
+                                      src={COLOR_ICONS[card.color]} 
+                                      alt={card.color} 
+                                      className="w-3 h-3"
+                                    />
                                   )}
                                   <span className="text-xs text-gray-500">{card.type}</span>
                                 </div>
@@ -658,9 +648,22 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
               })}
             </div>
             )}
+            </div>
           </div>
         )}
       </div>
+
+      {/* View Deck Button - Fixed at bottom */}
+      {onViewDeck && deck && (
+        <div className="border-t border-gray-200 p-4 mt-auto flex-shrink-0">
+          <button
+            onClick={onViewDeck}
+            className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center space-x-2 font-medium"
+          >
+            <span>View Deck</span>
+          </button>
+        </div>
+      )}
     </div>
     </>
   );

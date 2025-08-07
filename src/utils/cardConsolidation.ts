@@ -19,20 +19,23 @@ export const consolidateCards = (cards: LorcanaCard[]): ConsolidatedCard[] => {
     // Find the base card (regular version, lowest rarity, non-enchanted)
     const baseCard = findBaseCard(cardGroup);
     
-    // Organize variants
-    const variants = {
-      regular: findRegularCard(cardGroup),
-      foil: findFoilCard(cardGroup),
-      enchanted: findEnchantedCard(cardGroup),
-      special: findSpecialCards(cardGroup)
-    };
+    // Find all variants
+    const regularCard = findRegularCard(cardGroup);
+    const foilCard = findFoilCard(cardGroup);
+    const enchantedCard = findEnchantedCard(cardGroup);
+    const specialCards = findSpecialCards(cardGroup);
 
     const consolidatedCard: ConsolidatedCard = {
       baseCard,
-      variants,
       fullName,
-      hasEnchanted: variants.enchanted !== null,
-      hasSpecial: variants.special !== null && variants.special.length > 0
+      hasRegular: regularCard !== null,
+      hasFoil: foilCard !== null,
+      hasEnchanted: enchantedCard !== null,
+      hasSpecial: specialCards !== null && specialCards.length > 0,
+      regularCard: regularCard || undefined,
+      foilCard: foilCard || undefined,
+      enchantedCard: enchantedCard || undefined,
+      specialCards: specialCards || undefined
     };
 
     consolidatedCards.push(consolidatedCard);
@@ -87,15 +90,15 @@ const findSpecialCards = (cards: LorcanaCard[]): LorcanaCard[] | null => {
 export const getAvailableRarities = (consolidatedCard: ConsolidatedCard): string[] => {
   const rarities: string[] = [];
   
-  if (consolidatedCard.variants.regular) {
-    rarities.push(consolidatedCard.variants.regular.rarity);
+  if (consolidatedCard.regularCard) {
+    rarities.push(consolidatedCard.regularCard.rarity);
   }
   
-  if (consolidatedCard.variants.enchanted) {
+  if (consolidatedCard.enchantedCard) {
     rarities.push('Enchanted');
   }
   
-  if (consolidatedCard.variants.special) {
+  if (consolidatedCard.specialCards) {
     rarities.push('Special');
   }
   

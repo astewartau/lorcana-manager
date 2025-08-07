@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Deck, LorcanaCard, DeckSummary } from '../types';
+import { validateDeck as validateDeckUtil } from '../utils/deckValidation';
 
 const STORAGE_KEY = 'lorcana_decks';
 const CURRENT_DECK_KEY = 'lorcana_current_deck';
@@ -212,26 +213,11 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
   };
 
   const validateDeck = (deck: Deck): { isValid: boolean; errors: string[] } => {
-    const errors: string[] = [];
-    const totalCards = deck.cards.reduce((sum, c) => sum + c.quantity, 0);
-    
-    if (totalCards !== 60) {
-      errors.push(`Deck must have exactly 60 cards (currently ${totalCards})`);
-    }
-    
-    const overLimitCards = deck.cards.filter(c => c.quantity > 4);
-    if (overLimitCards.length > 0) {
-      errors.push(`Cards exceeding 4-copy limit: ${overLimitCards.map(c => c.name).join(', ')}`);
-    }
-    
-    const inkColors = new Set(deck.cards.map(c => c.color).filter(c => c));
-    if (inkColors.size > 2) {
-      errors.push(`Deck has more than 2 ink colors (${inkColors.size} colors)`);
-    }
-
+    // Use the validation utility function as single source of truth
+    const validationResult = validateDeckUtil(deck);
     return {
-      isValid: errors.length === 0,
-      errors
+      isValid: validationResult.isValid,
+      errors: validationResult.errors
     };
   };
 

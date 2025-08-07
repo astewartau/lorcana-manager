@@ -20,7 +20,7 @@ const DeckBuilderCardGrid: React.FC<DeckBuilderCardGridProps> = ({
   canAddCard
 }) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
       {cards.map((consolidatedCard) => {
         const deckQuantity = getCardQuantityInDeck(consolidatedCard.baseCard.id);
         const collectionQuantity = getCollectionQuantity(consolidatedCard);

@@ -143,7 +143,7 @@ export const matchCardToDatabase = (csvRow: DreambornCSVRow): ConsolidatedCard |
   
   // Find matching consolidated card
   const matches = consolidatedCards.filter(consolidatedCard => {
-    const { baseCard, variants } = consolidatedCard;
+    const { baseCard } = consolidatedCard;
     
     // Check if the full name matches
     if (baseCard.fullName === cleanName) {
@@ -151,13 +151,13 @@ export const matchCardToDatabase = (csvRow: DreambornCSVRow): ConsolidatedCard |
     }
     
     // Check if any variant matches (for enchanted cards)
-    if (csvRarity === 'Enchanted' && variants.enchanted) {
-      return variants.enchanted.fullName === cleanName;
+    if (csvRarity === 'Enchanted' && consolidatedCard.enchantedCard) {
+      return consolidatedCard.enchantedCard.fullName === cleanName;
     }
     
     // Check if special variants match
-    if (csvRarity === 'Special' && variants.special) {
-      return variants.special.some(special => special.fullName === cleanName);
+    if (csvRarity === 'Special' && consolidatedCard.specialCards) {
+      return consolidatedCard.specialCards.some(special => special.fullName === cleanName);
     }
     
     return false;

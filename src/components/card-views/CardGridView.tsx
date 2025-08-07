@@ -11,12 +11,14 @@ interface CardGridViewProps {
     enchanted: number;
     special: number;
   };
+  onCardClick?: (card: ConsolidatedCard) => void;
 }
 
 const CardGridView: React.FC<CardGridViewProps> = ({
   cards,
   onQuantityChange,
-  getVariantQuantities
+  getVariantQuantities,
+  onCardClick
 }) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-8">
@@ -30,6 +32,7 @@ const CardGridView: React.FC<CardGridViewProps> = ({
               onQuantityChange={(variantType, change) => 
                 onQuantityChange(consolidatedCard, variantType, change)
               }
+              onCardClick={onCardClick}
             />
           </div>
         );
