@@ -9,6 +9,7 @@ interface DeckPanelProps {
   onUpdateQuantity: (cardId: number, quantity: number) => void;
   onClearDeck: () => void;
   validation: { isValid: boolean; errors: string[] };
+  isCollapsed?: boolean;
 }
 
 const DeckPanel: React.FC<DeckPanelProps> = ({
@@ -16,7 +17,8 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
   onRemoveCard,
   onUpdateQuantity,
   onClearDeck,
-  validation
+  validation,
+  isCollapsed = false
 }) => {
   const { getVariantQuantities } = useCollection();
   const [groupBy, setGroupBy] = useState<'cost' | 'type' | 'color'>('cost');
@@ -323,9 +325,9 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
         </div>
       )}
 
-      <div className="w-80 bg-white shadow-lg border-l border-gray-200 flex flex-col h-screen">
+      <div className="w-full bg-white shadow-lg border-l border-gray-200 flex flex-col h-screen overflow-hidden">
         {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 flex-shrink-0">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-lg font-semibold text-gray-900">Deck Contents</h3>
           <button
@@ -369,8 +371,10 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
         )}
       </div>
 
-      {/* Statistics */}
-      <div className="border-b border-gray-200">
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Statistics */}
+        <div className="border-b border-gray-200">
         <button
           onClick={() => setStatisticsCollapsed(!statisticsCollapsed)}
           className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
@@ -519,8 +523,8 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
         )}
       </div>
 
-      {/* Card List */}
-      <div className={`overflow-hidden flex flex-col ${statisticsCollapsed ? 'flex-1' : 'flex-1'}`}>
+        {/* Card List */}
+        <div className="flex flex-col">
         <div className="border-b border-gray-200">
           <button
             onClick={() => setCardsCollapsed(!cardsCollapsed)}
@@ -553,7 +557,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
         </div>
 
         {!cardsCollapsed && (
-          <div className="flex-1 overflow-y-auto">
+          <div className="overflow-y-auto max-h-96">
             {deck.cards.length === 0 ? (
               <div className="p-4 text-center text-gray-500 text-sm">
                 No cards in deck. Start adding cards to build your deck!
@@ -659,6 +663,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
             )}
           </div>
         )}
+        </div>
       </div>
     </div>
     </>

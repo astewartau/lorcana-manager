@@ -1,4 +1,4 @@
-import { Deck, DeckCard } from '../types';
+import { Deck } from '../types';
 
 export interface DeckValidationResult {
   isValid: boolean;
@@ -36,9 +36,37 @@ export const validateDeck = (deck: Deck): DeckValidationResult => {
   }
   
   // Rule 4: Check ink color restrictions (max 2 colors in competitive play)
-  const inkColors = new Set(deck.cards.map(card => card.color).filter(color => color !== ''));
-  if (inkColors.size > 2) {
-    warnings.push(`Deck uses ${inkColors.size} ink colors. Competitive decks typically use 1-2 colors.`);
+  const allColors = deck.cards.map(card => card.color).filter(color => color !== '');
+  const baseColors = new Set<string>();
+  
+  // Extract base colors from both single and dual-ink cards
+  allColors.forEach(color => {
+    if (color.includes('-')) {
+      // Dual-ink card: split and add both colors
+      const [color1, color2] = color.split('-');
+      baseColors.add(color1);
+      baseColors.add(color2);
+    } else {
+      // Single-ink card
+      baseColors.add(color);
+    }
+  });
+  
+  // Check if deck has more than 2 base colors
+  if (baseColors.size > 2) {
+    errors.push(`Deck has more than 2 ink colors (${baseColors.size} colors: ${Array.from(baseColors).join(', ')})`);
+  }
+  
+  // Validate dual-ink cards only use the deck's base colors
+  const baseColorArray = Array.from(baseColors);
+  const invalidDualInks = allColors.filter(color => {
+    if (!color.includes('-')) return false; // Skip single-ink cards
+    const [color1, color2] = color.split('-');
+    return !baseColorArray.includes(color1) || !baseColorArray.includes(color2);
+  });
+  
+  if (invalidDualInks.length > 0) {
+    errors.push(`Deck contains dual-ink cards with colors not in the deck's base colors`);
   }
   
   // Rule 5: Check for sufficient inkwell cards (recommended: at least 12-15)

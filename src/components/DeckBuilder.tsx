@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ArrowLeft, Search, Grid, List, Filter, Save } from 'lucide-react';
+import { ArrowLeft, Search, Grid, List, Filter, Save, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FilterOptions, SortOption, ConsolidatedCard } from '../types';
 import { consolidatedCards, sets } from '../data/allCards';
 import { useDeck } from '../contexts/DeckContext';
@@ -28,7 +28,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
   const [deckName, setDeckName] = useState(currentDeck?.name || '');
 
   const [filters, setFilters] = useState<FilterOptions>(getDefaultFilters());
-
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Update deck name in state when current deck changes
   useEffect(() => {
@@ -169,9 +169,9 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
         </div>
 
         {/* Main Content */}
-        <div className="flex">
+        <div className="flex relative">
           {/* Cards Panel */}
-          <div className="flex-1 p-6">
+          <div className={`transition-all duration-300 ease-in-out p-6 ${sidebarCollapsed ? 'pr-20' : 'pr-6'}`} style={{ width: sidebarCollapsed ? 'calc(100% - 60px)' : 'calc(100% - 320px)' }}>
             <div className="bg-white rounded-t-lg shadow-md p-6">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 relative">
@@ -271,14 +271,28 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
             )}
           </div>
 
-          {/* Deck Panel */}
-          <DeckPanel
-            deck={currentDeck}
-            onRemoveCard={handleRemoveCard}
-            onUpdateQuantity={updateCardQuantity}
-            onClearDeck={clearDeck}
-            validation={validation}
-          />
+          {/* Deck Panel - Sticky Sidebar */}
+          <div className={`fixed top-0 right-0 h-screen transition-all duration-300 ease-in-out z-40 ${sidebarCollapsed ? 'w-16' : 'w-80'}`}>
+            {/* Collapse/Expand Button */}
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-50 w-8 h-12 bg-white border border-gray-300 rounded-l-lg shadow-md hover:bg-gray-50 transition-colors flex items-center justify-center"
+            >
+              {sidebarCollapsed ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+            </button>
+            
+            {/* Sidebar Content */}
+            <div className={`h-full transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+              <DeckPanel
+                deck={currentDeck}
+                onRemoveCard={handleRemoveCard}
+                onUpdateQuantity={updateCardQuantity}
+                onClearDeck={clearDeck}
+                validation={validation}
+                isCollapsed={sidebarCollapsed}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
