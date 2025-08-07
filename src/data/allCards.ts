@@ -24,7 +24,10 @@ export const rarities = Array.from(new Set(allCards.map(card => card.rarity))).s
   return aIndex - bIndex;
 });
 
-export const colors = Array.from(new Set(allCards.map(card => card.color))).sort();
+// Export only single colors and empty string, not dual-ink combinations
+export const colors = Array.from(new Set(allCards.map(card => card.color)))
+  .filter(color => color === '' || !color.includes('-'))
+  .sort();
 
 export const cardTypes = Array.from(new Set(allCards.map(card => card.type))).sort();
 

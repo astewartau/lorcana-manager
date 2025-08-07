@@ -5,6 +5,7 @@ import { rarities, colors, cardTypes, stories, subtypes, costs, sets, costRange,
 import MultiSelectFilter from '../MultiSelectFilter';
 import RangeFilter from '../RangeFilter';
 import { CollectionFilter, InkwellFilter, SpecialVariantsFilter } from '../filters';
+import { RARITY_ICONS, COLOR_ICONS } from '../../constants/icons';
 
 interface FilterPanelProps {
   filters: FilterOptions;
@@ -23,8 +24,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   activeFiltersCount,
   onClearAllFilters,
   onClose,
-  rarityIconMap = {},
-  colorIconMap = {},
+  rarityIconMap = RARITY_ICONS,
+  colorIconMap = COLOR_ICONS,
   showCollectionFilters = true
 }) => {
   return (
@@ -60,17 +61,30 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           iconMap={rarityIconMap}
         />
         
-        <MultiSelectFilter
-          title="Ink Color"
-          options={colors.map(color => color === '' ? 'None' : color)}
-          selectedValues={filters.colors.map(color => color === '' ? 'None' : color)}
-          onChange={(values) => {
-            const actualColors = (values as string[]).map(value => value === 'None' ? '' : value);
-            setFilters({...filters, colors: actualColors});
-          }}
-          defaultCollapsed={true}
-          iconMap={colorIconMap}
-        />
+        <div>
+          <MultiSelectFilter
+            title="Ink Color"
+            options={colors.map(color => color === '' ? 'None' : color)}
+            selectedValues={filters.colors.map(color => color === '' ? 'None' : color)}
+            onChange={(values) => {
+              const actualColors = (values as string[]).map(value => value === 'None' ? '' : value);
+              setFilters({...filters, colors: actualColors});
+            }}
+            defaultCollapsed={true}
+            iconMap={colorIconMap}
+          />
+          <div className="mt-2 px-2">
+            <label className="flex items-center space-x-2 text-sm">
+              <input
+                type="checkbox"
+                checked={filters.showAnyWithColors}
+                onChange={(e) => setFilters({...filters, showAnyWithColors: e.target.checked})}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-gray-700">Show any with colours</span>
+            </label>
+          </div>
+        </div>
         
         <MultiSelectFilter
           title="Type"

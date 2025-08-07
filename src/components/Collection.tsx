@@ -7,6 +7,7 @@ import { CardGridView, CardListView, GroupedView } from './card-views';
 import { usePagination } from '../hooks';
 import { sortCards, groupCards } from '../utils/cardFiltering';
 import DreambornImport from './DreambornImport';
+import { RARITY_ICONS, COLOR_ICONS } from '../constants/icons';
 
 const Collection: React.FC = () => {
   const {
@@ -25,26 +26,6 @@ const Collection: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const cardsPerPage = 100;
   
-  // Icon mapping for rarities
-  const rarityIconMap: Record<string, string> = {
-    'Common': '/imgs/common.svg',
-    'Uncommon': '/imgs/uncommon.svg',
-    'Rare': '/imgs/rare.svg',
-    'Super Rare': '/imgs/super_rare.svg',
-    'Legendary': '/imgs/legendary.svg',
-    'Enchanted': '/imgs/enchanted.png',
-    'Special': '/imgs/promo.webp'
-  };
-  
-  // Icon mapping for ink colors
-  const colorIconMap: Record<string, string> = {
-    'Amber': '/imgs/amber.svg',
-    'Amethyst': '/imgs/amethyst.svg',
-    'Emerald': '/imgs/emerald.svg',
-    'Ruby': '/imgs/ruby.svg',
-    'Sapphire': '/imgs/sapphire.svg',
-    'Steel': '/imgs/steel.svg'
-  };
 
   // Filter, sort and group collection cards
   const { sortedCards, groupedCards, totalFilteredCards } = useMemo(() => {
@@ -251,8 +232,8 @@ const Collection: React.FC = () => {
           onQuantityChange={handleVariantQuantityChange}
           getVariantQuantities={getVariantQuantities}
           staleCardIds={new Set()}
-          rarityIconMap={rarityIconMap}
-          colorIconMap={colorIconMap}
+          rarityIconMap={RARITY_ICONS}
+          colorIconMap={COLOR_ICONS}
           sets={sets}
         />
       ) : viewMode === 'grid' ? (
@@ -267,8 +248,8 @@ const Collection: React.FC = () => {
           onQuantityChange={handleVariantQuantityChange}
           getVariantQuantities={getVariantQuantities}
           staleCardIds={new Set()}
-          rarityIconMap={rarityIconMap}
-          colorIconMap={colorIconMap}
+          rarityIconMap={RARITY_ICONS}
+          colorIconMap={COLOR_ICONS}
           sets={sets}
         />
       )}

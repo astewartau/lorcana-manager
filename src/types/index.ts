@@ -82,6 +82,7 @@ export interface FilterOptions {
   search: string;
   sets: string[];
   colors: string[];
+  showAnyWithColors: boolean; // New field for inclusive/restrictive color filtering
   rarities: string[];
   types: string[];
   stories: string[];

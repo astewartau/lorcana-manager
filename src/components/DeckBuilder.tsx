@@ -9,6 +9,8 @@ import { filterCards, sortCards, countActiveFilters } from '../utils/cardFilteri
 import DeckPanel from './deck/DeckPanel';
 import DeckBuilderCardGrid from './deck/DeckBuilderCardGrid';
 import DeckBuilderCardList from './deck/DeckBuilderCardList';
+import QuickFilters from './QuickFilters';
+import { RARITY_ICONS, COLOR_ICONS } from '../constants/icons';
 
 interface DeckBuilderProps {
   onBack: () => void;
@@ -35,6 +37,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
     search: '',
     sets: defaultSetCodes,
     colors: nonEmptyColors,
+    showAnyWithColors: true, // Default to inclusive mode
     rarities: [],
     types: [],
     stories: [],
@@ -56,25 +59,6 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
     cardCountValue: 1,
   });
 
-  // Icon mappings for filters  
-  const rarityIconMap: Record<string, string> = {
-    'Common': '/imgs/common.svg',
-    'Uncommon': '/imgs/uncommon.svg',
-    'Rare': '/imgs/rare.svg',
-    'Super Rare': '/imgs/super_rare.svg',
-    'Legendary': '/imgs/legendary.svg',
-    'Enchanted': '/imgs/enchanted.png',
-    'Special': '/imgs/promo.webp'
-  };
-  
-  const colorIconMap: Record<string, string> = {
-    'Amber': '/imgs/amber.svg',
-    'Amethyst': '/imgs/amethyst.svg',
-    'Emerald': '/imgs/emerald.svg',
-    'Ruby': '/imgs/ruby.svg',
-    'Sapphire': '/imgs/sapphire.svg',
-    'Steel': '/imgs/steel.svg'
-  };
 
   // Update deck name in state when current deck changes
   useEffect(() => {
@@ -107,6 +91,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
       search: '',
       sets: defaultSetCodes,
       colors: nonEmptyColors,
+      showAnyWithColors: true, // Default to inclusive mode
       rarities: [],
       types: [],
       stories: [],
@@ -242,8 +227,8 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
         <div className="flex">
           {/* Cards Panel */}
           <div className="flex-1 p-6">
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <div className="bg-white rounded-t-lg shadow-md p-6">
+              <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                   <input
@@ -295,6 +280,14 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
               </div>
             </div>
 
+            {/* Quick Filters */}
+            <QuickFilters
+              filters={filters}
+              setFilters={setFilters}
+              colorIconMap={COLOR_ICONS}
+              rarityIconMap={RARITY_ICONS}
+            />
+
             {showFilters && (
               <FilterPanel
                 filters={filters}
@@ -302,8 +295,8 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
                 activeFiltersCount={activeFiltersCount}
                 onClearAllFilters={clearAllFilters}
                 onClose={() => setShowFilters(false)}
-                rarityIconMap={rarityIconMap}
-                colorIconMap={colorIconMap}
+                rarityIconMap={RARITY_ICONS}
+                colorIconMap={COLOR_ICONS}
                 showCollectionFilters={true}
               />
             )}
@@ -326,8 +319,8 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
                 onAddCard={handleAddCard}
                 onRemoveCard={handleRemoveCard}
                 canAddCard={canAddCard}
-                colorIconMap={colorIconMap}
-                rarityIconMap={rarityIconMap}
+                colorIconMap={COLOR_ICONS}
+                rarityIconMap={RARITY_ICONS}
                 sets={sets}
               />
             )}

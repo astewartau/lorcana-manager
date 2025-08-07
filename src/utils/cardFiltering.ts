@@ -25,7 +25,44 @@ export const filterCards = (
                          (baseCard.story?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
     
     const matchesSet = filters.sets.length === 0 || filters.sets.includes(baseCard.setCode);
-    const matchesColor = filters.colors.length === 0 || filters.colors.includes(baseCard.color);
+    const matchesColor = filters.colors.length === 0 || (() => {
+      const selectedColors = filters.colors.filter(c => c !== '');
+      const hasNoneSelected = filters.colors.includes('');
+      
+      // Handle "None" color specifically
+      if (baseCard.color === '') {
+        return hasNoneSelected;
+      }
+      
+      // No colors selected (except maybe "None")
+      if (selectedColors.length === 0) {
+        return false;
+      }
+      
+      const isDualInk = baseCard.color.includes('-');
+      
+      if (filters.showAnyWithColors) {
+        // Inclusive mode: show any card that includes any selected color
+        return selectedColors.some(color => baseCard.color.includes(color));
+      } else {
+        // Restrictive mode
+        if (selectedColors.length === 1) {
+          // Single color selected: only show single-ink cards of that color
+          return !isDualInk && baseCard.color === selectedColors[0];
+        } else {
+          // Two or more colors selected: show single-ink cards of selected colors 
+          // AND dual-ink cards with combinations of only the selected colors
+          if (isDualInk) {
+            // For dual-ink: both colors must be in the selected colors
+            const [color1, color2] = baseCard.color.split('-');
+            return selectedColors.includes(color1) && selectedColors.includes(color2);
+          } else {
+            // For single-ink: must be one of the selected colors
+            return selectedColors.includes(baseCard.color);
+          }
+        }
+      }
+    })();
     const matchesType = filters.types.length === 0 || filters.types.includes(baseCard.type);
     const matchesStory = filters.stories.length === 0 || (baseCard.story && filters.stories.includes(baseCard.story));
     const matchesSubtype = filters.subtypes.length === 0 || (baseCard.subtypes && baseCard.subtypes.some(st => filters.subtypes.includes(st)));
