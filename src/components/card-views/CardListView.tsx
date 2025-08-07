@@ -14,6 +14,7 @@ interface CardListViewProps {
   rarityIconMap: Record<string, string>;
   colorIconMap: Record<string, string>;
   sets: Array<{code: string; name: string}>;
+  onCardClick?: (card: ConsolidatedCard) => void;
 }
 
 const CardListView: React.FC<CardListViewProps> = ({
@@ -23,7 +24,8 @@ const CardListView: React.FC<CardListViewProps> = ({
   staleCardIds,
   rarityIconMap,
   colorIconMap,
-  sets
+  sets,
+  onCardClick
 }) => {
   // Ultra-compact quantity control
   const renderMiniControl = (
@@ -38,7 +40,10 @@ const CardListView: React.FC<CardListViewProps> = ({
       <div className="flex items-center space-x-0.5 text-xs">
         <span className="text-gray-500 font-medium">{label}:</span>
         <button
-          onClick={() => onQuantityChange(consolidatedCard, variantType, -1)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onQuantityChange(consolidatedCard, variantType, -1);
+          }}
           disabled={quantity <= 0}
           className="px-1 hover:bg-black hover:bg-opacity-10 rounded disabled:opacity-50 text-gray-600"
         >
@@ -46,7 +51,10 @@ const CardListView: React.FC<CardListViewProps> = ({
         </button>
         <span className="min-w-[16px] text-center font-semibold">{quantity}</span>
         <button
-          onClick={() => onQuantityChange(consolidatedCard, variantType, 1)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onQuantityChange(consolidatedCard, variantType, 1);
+          }}
           className="px-1 hover:bg-black hover:bg-opacity-10 rounded text-gray-600"
         >
           +
@@ -69,6 +77,7 @@ const CardListView: React.FC<CardListViewProps> = ({
             className={`bg-white p-2 rounded hover:shadow-lg transition-all duration-300 ease-out flex items-center space-x-2 text-xs border border-gray-200 hover:scale-[1.02] hover:-translate-y-0.5 cursor-pointer transform-gpu ${
               staleCardIds.has(baseCard.id) ? 'bg-orange-50 border-orange-300' : ''
             }`}
+            onClick={() => onCardClick?.(consolidatedCard)}
           >
             {/* Card Number */}
             <span className="font-mono text-gray-700 font-semibold w-12 text-center">#{baseCard.number}</span>

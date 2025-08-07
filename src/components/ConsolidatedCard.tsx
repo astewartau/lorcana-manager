@@ -6,12 +6,14 @@ interface ConsolidatedCardProps {
   consolidatedCard: ConsolidatedCard;
   quantities: { regular: number; foil: number; enchanted: number; special: number };
   onQuantityChange: (variantType: 'regular' | 'foil' | 'enchanted' | 'special', change: number) => void;
+  onCardClick?: (card: ConsolidatedCard) => void;
 }
 
 const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({ 
   consolidatedCard, 
   quantities,
-  onQuantityChange 
+  onQuantityChange,
+  onCardClick
 }) => {
   const { baseCard, hasEnchanted, hasSpecial } = consolidatedCard;
   const cardRef = useRef<HTMLDivElement>(null);
@@ -76,7 +78,10 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
     return (
       <div className={`flex items-center justify-between px-2 py-1 rounded-md border ${getVariantBackground(variantType)} transition-all`}>
         <button
-          onClick={() => onQuantityChange(variantType, -1)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onQuantityChange(variantType, -1);
+          }}
           disabled={quantity <= 0}
           className="p-0.5 rounded text-red-600 hover:text-red-800 transition-colors disabled:text-gray-400"
         >
@@ -86,7 +91,10 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
           {quantity}
         </span>
         <button
-          onClick={() => onQuantityChange(variantType, 1)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onQuantityChange(variantType, 1);
+          }}
           className="p-0.5 rounded text-green-600 hover:text-green-800 transition-colors"
         >
           <Plus size={10} />
@@ -109,6 +117,7 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onClick={() => onCardClick?.(consolidatedCard)}
       >
         <img 
           src={baseCard.images.full} 

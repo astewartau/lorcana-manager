@@ -4,10 +4,11 @@ import CardBrowser from './components/CardBrowser';
 import Collection from './components/Collection';
 import MyDecks from './components/MyDecks';
 import DeckBuilder from './components/DeckBuilder';
+import DeckSummary from './components/DeckSummary';
 import { CollectionProvider } from './contexts/CollectionContext';
 import { DeckProvider } from './contexts/DeckContext';
 
-type Tab = 'browse' | 'collection' | 'decks' | 'deck-builder';
+type Tab = 'browse' | 'collection' | 'decks' | 'deck-builder' | 'deck-summary';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('browse');
@@ -16,7 +17,7 @@ function App() {
     { id: 'browse' as Tab, label: 'Browse Cards', icon: BookOpen },
     { id: 'collection' as Tab, label: 'My Collection', icon: Package },
     { id: 'decks' as Tab, label: 'My Decks', icon: Layers3 },
-  ].filter(tab => tab.id !== 'deck-builder');
+  ].filter(tab => !['deck-builder', 'deck-summary'].includes(tab.id));
 
   const renderContent = () => {
     switch (activeTab) {
@@ -25,9 +26,20 @@ function App() {
       case 'collection':
         return <Collection />;
       case 'decks':
-        return <MyDecks onBuildDeck={() => setActiveTab('deck-builder')} />;
+        return <MyDecks 
+          onBuildDeck={() => setActiveTab('deck-builder')} 
+          onViewDeck={() => setActiveTab('deck-summary')} 
+        />;
       case 'deck-builder':
-        return <DeckBuilder onBack={() => setActiveTab('decks')} />;
+        return <DeckBuilder 
+          onBack={() => setActiveTab('decks')} 
+          onViewDeck={() => setActiveTab('deck-summary')}
+        />;
+      case 'deck-summary':
+        return <DeckSummary 
+          onBack={() => setActiveTab('decks')} 
+          onEditDeck={() => setActiveTab('deck-builder')} 
+        />;
       default:
         return <CardBrowser />;
     }
@@ -47,7 +59,7 @@ function App() {
               </p>
             </header>
 
-            {activeTab !== 'deck-builder' && (
+            {!['deck-builder', 'deck-summary'].includes(activeTab) && (
               <nav className="mb-8">
                 <div className="flex justify-center">
                   <div className="bg-white rounded-lg shadow-md p-1 flex space-x-1">

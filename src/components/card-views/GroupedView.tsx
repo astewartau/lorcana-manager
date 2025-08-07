@@ -17,6 +17,7 @@ interface GroupedViewProps {
   rarityIconMap: Record<string, string>;
   colorIconMap: Record<string, string>;
   sets: Array<{code: string; name: string}>;
+  onCardClick?: (card: ConsolidatedCard) => void;
 }
 
 const GroupedView: React.FC<GroupedViewProps> = ({
@@ -27,7 +28,8 @@ const GroupedView: React.FC<GroupedViewProps> = ({
   staleCardIds,
   rarityIconMap,
   colorIconMap,
-  sets
+  sets,
+  onCardClick
 }) => {
   return (
     <div className="space-y-6">
@@ -47,6 +49,7 @@ const GroupedView: React.FC<GroupedViewProps> = ({
                 cards={cards}
                 onQuantityChange={onQuantityChange}
                 getVariantQuantities={getVariantQuantities}
+                onCardClick={onCardClick}
               />
             </div>
           ) : (
@@ -59,6 +62,7 @@ const GroupedView: React.FC<GroupedViewProps> = ({
                 rarityIconMap={rarityIconMap}
                 colorIconMap={colorIconMap}
                 sets={sets}
+                onCardClick={onCardClick}
               />
             </div>
           )}

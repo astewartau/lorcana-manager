@@ -1,23 +1,18 @@
 import React, { useState } from 'react';
-import { Plus, Search, Upload, FileText } from 'lucide-react';
+import { Plus, Upload, FileText } from 'lucide-react';
 import { useDeck } from '../contexts/DeckContext';
 import DeckBox3D from './DeckBox3D';
 
 interface MyDecksProps {
   onBuildDeck: (deckId?: string) => void;
+  onViewDeck: (deckId: string) => void;
 }
 
-const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck }) => {
-  const { decks, createDeck, deleteDeck, duplicateDeck, getDeckSummary, exportDeck, importDeck } = useDeck();
-  const [searchTerm, setSearchTerm] = useState('');
+const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
+  const { decks, createDeck, deleteDeck, duplicateDeck, getDeckSummary, exportDeck, importDeck, setCurrentDeck } = useDeck();
   const [showNewDeckForm, setShowNewDeckForm] = useState(false);
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckDescription, setNewDeckDescription] = useState('');
-
-  const filteredDecks = decks.filter(deck =>
-    deck.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (deck.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-  );
 
   const handleCreateDeck = () => {
     if (!newDeckName.trim()) return;
@@ -133,20 +128,6 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck }) => {
           </div>
         )}
 
-        {decks.length > 0 && (
-          <div className="flex gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search decks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {decks.length === 0 ? (
@@ -163,7 +144,7 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 justify-items-center">
-          {filteredDecks.map((deck) => {
+          {decks.map((deck) => {
             const summary = getDeckSummary(deck.id);
             if (!summary) return null;
             
@@ -172,7 +153,20 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck }) => {
                 <DeckBox3D
                   deck={deck}
                   summary={summary}
-                  onEdit={onBuildDeck}
+                  onView={(deckId) => {
+                    const targetDeck = decks.find(d => d.id === deckId);
+                    if (targetDeck) {
+                      setCurrentDeck(targetDeck);
+                    }
+                    onViewDeck(deckId);
+                  }}
+                  onEdit={(deckId) => {
+                    const targetDeck = decks.find(d => d.id === deckId);
+                    if (targetDeck) {
+                      setCurrentDeck(targetDeck);
+                    }
+                    onBuildDeck(deckId);
+                  }}
                   onDuplicate={duplicateDeck}
                   onDelete={deleteDeck}
                   onExport={handleExportDeck}

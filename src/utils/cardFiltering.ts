@@ -219,7 +219,46 @@ export const groupCards = (
     groupedCards[groupKey].push(card);
   });
   
-  return groupedCards;
+  // Sort the groups based on the grouping type
+  const sortedGroupedCards: Record<string, ConsolidatedCard[]> = {};
+  let sortedKeys: string[];
+  
+  switch (groupBy) {
+    case 'cost':
+      // Sort cost groups numerically
+      sortedKeys = Object.keys(groupedCards).sort((a, b) => {
+        const costA = parseInt(a.replace('Cost ', ''));
+        const costB = parseInt(b.replace('Cost ', ''));
+        return costA - costB;
+      });
+      break;
+    case 'rarity':
+      // Sort rarity groups by rarity order
+      sortedKeys = Object.keys(groupedCards).sort((a, b) => {
+        return rarityOrder.indexOf(a) - rarityOrder.indexOf(b);
+      });
+      break;
+    case 'set':
+      // Sort set groups by set order (assuming sets are already in chronological order)
+      sortedKeys = Object.keys(groupedCards).sort((a, b) => {
+        const setA = sets.find(s => s.name === a);
+        const setB = sets.find(s => s.name === b);
+        if (!setA || !setB) return a.localeCompare(b);
+        return sets.indexOf(setA) - sets.indexOf(setB);
+      });
+      break;
+    default:
+      // Sort alphabetically for other group types
+      sortedKeys = Object.keys(groupedCards).sort();
+      break;
+  }
+  
+  // Rebuild the object with sorted keys
+  sortedKeys.forEach(key => {
+    sortedGroupedCards[key] = groupedCards[key];
+  });
+  
+  return sortedGroupedCards;
 };
 
 // Count active filters

@@ -11,6 +11,7 @@ interface DeckBox3DProps {
     isValid: boolean;
     updatedAt: Date;
   };
+  onView: (deckId: string) => void;
   onEdit: (deckId: string) => void;
   onDuplicate: (deckId: string) => void;
   onDelete: (deckId: string) => void;
@@ -20,6 +21,7 @@ interface DeckBox3DProps {
 const DeckBox3D: React.FC<DeckBox3DProps> = ({
   deck,
   summary,
+  onView,
   onEdit,
   onDuplicate,
   onDelete,
@@ -70,13 +72,6 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
     }
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
 
   const inkColors = Object.entries(summary.inkDistribution)
     .filter(([, count]) => count > 0)
@@ -101,11 +96,11 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4">
+    <div className="flex flex-col items-center space-y-1">
       {/* 3D Scene Container */}
       <div 
-        className="w-48 h-64 flex items-center justify-center"
-        style={{ perspective: '1000px' }}
+        className="w-60 h-60 flex items-center justify-center"
+        style={{ perspective: '1200px' }}
       >
         <div
           ref={boxRef}
@@ -118,10 +113,10 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
           onMouseMove={handleMouseMove}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          onClick={() => onEdit(deck.id)}
+          onClick={() => onView(deck.id)}
         >
           {/* Real 3D Deckbox with 6 faces */}
-          <div className="relative w-24 h-36" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="relative w-32 h-48" style={{ transformStyle: 'preserve-3d' }}>
             
             {/* Front Face */}
             <div 
@@ -129,7 +124,7 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
               style={{ transform: 'translateZ(30px)' }}
             >
               {/* Deck Name */}
-              <div className="text-white font-bold text-xs text-center leading-tight drop-shadow-lg">
+              <div className="text-white font-bold text-sm text-center leading-tight drop-shadow-lg">
                 {deck.name}
               </div>
               
@@ -142,7 +137,7 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
                   {baseInkColors.map(([color]) => (
                     <div 
                       key={color} 
-                      className="relative w-8 h-8 flex items-center justify-center"
+                      className="relative w-10 h-10 flex items-center justify-center"
                       title={color}
                     >
                       {COLOR_ICONS[color] ? (
@@ -179,9 +174,9 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
             <div 
               className={`absolute w-full bg-gradient-to-b ${getDeckboxGradient(primaryInkColor)} border-2 border-gray-700 flex items-center justify-center shadow-lg`}
               style={{ 
-                height: '60px',
-                transform: 'rotateX(90deg) translateZ(18px)',
-                top: '-10px',
+                height: '80px',
+                transform: 'rotateX(90deg) translateZ(24px)',
+                top: '-12px',
                 filter: 'brightness(1.3)',
                 backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.1) 75%)'
               }}
@@ -195,9 +190,9 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
             <div 
               className={`absolute w-full bg-gradient-to-t ${getDeckboxGradient(primaryInkColor)} border-2 border-gray-800 shadow-inner`}
               style={{ 
-                height: '60px',
-                transform: 'rotateX(-90deg) translateZ(18px)',
-                bottom: '-8px',
+                height: '80px',
+                transform: 'rotateX(-90deg) translateZ(24px)',
+                bottom: '-10px',
                 filter: 'brightness(0.5)'
               }}
             />
@@ -206,8 +201,8 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
             <div 
               className={`absolute h-full bg-gradient-to-r ${getDeckboxGradient(primaryInkColor)} border-2 border-gray-800 shadow-lg`}
               style={{ 
-                width: '60px',
-                transform: 'rotateY(-90deg) translateZ(30px)',
+                width: '80px',
+                transform: 'rotateY(-90deg) translateZ(40px)',
                 left: '0px',
                 filter: 'brightness(0.7)'
               }}
@@ -217,8 +212,8 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
             <div 
               className={`absolute h-full bg-gradient-to-l ${getDeckboxGradient(primaryInkColor)} border-2 border-gray-600 shadow-lg`}
               style={{ 
-                width: '60px',
-                transform: 'rotateY(90deg) translateZ(30px)',
+                width: '80px',
+                transform: 'rotateY(90deg) translateZ(40px)',
                 right: '0px',
                 filter: 'brightness(0.85)'
               }}
@@ -228,7 +223,7 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
             <div 
               className="absolute inset-0 pointer-events-none shadow-inner"
               style={{ 
-                transform: 'translateZ(31px)',
+                transform: 'translateZ(41px)',
                 background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.1) 100%)'
               }}
             />
@@ -238,9 +233,9 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
           <div 
             className="absolute bg-black/20 rounded-full blur-md"
             style={{
-              width: `${40 + Math.abs(rotateY) * 0.5}px`,
-              height: `${20 + Math.abs(rotateX) * 0.3}px`,
-              bottom: '-35px',
+              width: `${50 + Math.abs(rotateY) * 0.6}px`,
+              height: `${25 + Math.abs(rotateX) * 0.4}px`,
+              bottom: '-45px',
               left: '50%',
               transform: `translateX(-50%) translateX(${rotateY * 0.5}px) scale(${1 + (Math.abs(rotateX) + Math.abs(rotateY)) * 0.005})`,
               opacity: 0.3 + (Math.abs(rotateX) + Math.abs(rotateY)) * 0.005
@@ -249,17 +244,13 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
         </div>
       </div>
       
-      {/* Deck Name */}
-      <div className="text-center max-w-48">
-        <h3 className="text-sm font-bold text-gray-900 truncate">{deck.name}</h3>
-        {deck.description && (
-          <p className="text-xs text-gray-600 truncate mt-1">{deck.description}</p>
-        )}
-        <p className="text-xs text-gray-500 mt-1">{formatDate(summary.updatedAt)}</p>
-      </div>
-      
       {/* Action Buttons */}
-      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <div 
+        className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 -mt-24"
+        onMouseEnter={(e) => e.stopPropagation()}
+        onMouseMove={(e) => e.stopPropagation()}
+        onMouseLeave={(e) => e.stopPropagation()}
+      >
         <button
           onClick={(e) => {
             e.stopPropagation();

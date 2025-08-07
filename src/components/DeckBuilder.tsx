@@ -5,8 +5,10 @@ import { consolidatedCards, sets } from '../data/allCards';
 import { useDeck } from '../contexts/DeckContext';
 import { useCollection } from '../contexts/CollectionContext';
 import FilterPanel from './shared/FilterPanel';
+import PaginationControls from './shared/PaginationControls';
 import { filterCards, sortCards, countActiveFilters } from '../utils/cardFiltering';
 import { getDefaultFilters } from '../utils/filterDefaults';
+import { usePagination } from '../hooks/usePagination';
 import DeckPanel from './deck/DeckPanel';
 import DeckBuilderCardGrid from './deck/DeckBuilderCardGrid';
 import DeckBuilderCardList from './deck/DeckBuilderCardList';
@@ -15,9 +17,10 @@ import { RARITY_ICONS, COLOR_ICONS } from '../constants/icons';
 
 interface DeckBuilderProps {
   onBack: () => void;
+  onViewDeck: () => void;
 }
 
-const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
+const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
   const { currentDeck, updateDeck, addCardToDeck, removeCardFromDeck, updateCardQuantity, validateDeck } = useDeck();
   const { getVariantQuantities } = useCollection();
   
@@ -29,6 +32,8 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
 
   const [filters, setFilters] = useState<FilterOptions>(getDefaultFilters());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const cardsPerPage = 100;
 
   // Update deck name in state when current deck changes
   useEffect(() => {
@@ -45,16 +50,29 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
   };
 
   // Filter and sort cards
-  const { sortedCards, activeFiltersCount } = useMemo(() => {
+  const { sortedCards, activeFiltersCount, totalCards } = useMemo(() => {
     const filtered = filterCards(consolidatedCards, searchTerm, filters, new Set(), getVariantQuantities);
     const sorted = sortCards(filtered, sortBy);
     const activeCount = countActiveFilters(filters);
     
     return {
       sortedCards: sorted,
-      activeFiltersCount: activeCount
+      activeFiltersCount: activeCount,
+      totalCards: sorted.length
     };
   }, [searchTerm, filters, sortBy, getVariantQuantities]);
+
+  // Pagination
+  const pagination = usePagination({
+    totalItems: totalCards,
+    itemsPerPage: cardsPerPage,
+    resetTriggers: [searchTerm, filters, sortBy]
+  });
+
+  // Get paginated cards for current page
+  const paginatedCards = useMemo(() => {
+    return sortedCards.slice(pagination.startIndex, pagination.endIndex);
+  }, [sortedCards, pagination.startIndex, pagination.endIndex]);
 
   const clearAllFilters = () => {
     setFilters(getDefaultFilters());
@@ -246,10 +264,24 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
               />
             )}
 
+            {/* Top Pagination Info */}
+            <PaginationControls
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              totalItems={totalCards}
+              startIndex={pagination.startIndex}
+              endIndex={pagination.endIndex}
+              onPageChange={pagination.setCurrentPage}
+              onPrevPage={pagination.goToPrevPage}
+              onNextPage={pagination.goToNextPage}
+              showCompact={true}
+              showBottomControls={false}
+            />
+
             {/* Cards Display */}
             {viewMode === 'grid' ? (
               <DeckBuilderCardGrid
-                cards={sortedCards}
+                cards={paginatedCards}
                 getCardQuantityInDeck={getCardQuantityInDeck}
                 getCollectionQuantity={getCollectionQuantity}
                 onAddCard={handleAddCard}
@@ -258,7 +290,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
               />
             ) : (
               <DeckBuilderCardList
-                cards={sortedCards}
+                cards={paginatedCards}
                 getCardQuantityInDeck={getCardQuantityInDeck}
                 getCollectionQuantity={getCollectionQuantity}
                 onAddCard={handleAddCard}
@@ -269,6 +301,20 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
                 sets={sets}
               />
             )}
+            
+            {/* Pagination Controls */}
+            <PaginationControls
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              totalItems={totalCards}
+              startIndex={pagination.startIndex}
+              endIndex={pagination.endIndex}
+              onPageChange={pagination.setCurrentPage}
+              onPrevPage={pagination.goToPrevPage}
+              onNextPage={pagination.goToNextPage}
+              showTopInfo={false}
+              showBottomControls={true}
+            />
           </div>
 
           {/* Deck Panel - Sticky Sidebar */}
@@ -288,6 +334,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
                 onRemoveCard={handleRemoveCard}
                 onUpdateQuantity={updateCardQuantity}
                 onClearDeck={clearDeck}
+                onViewDeck={onViewDeck}
                 validation={validation}
                 isCollapsed={sidebarCollapsed}
               />

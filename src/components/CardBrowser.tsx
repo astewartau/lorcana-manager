@@ -1,14 +1,20 @@
-import React from 'react';
-import { Search, Grid, List, ChevronLeft, ChevronRight, Filter, RotateCcw, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Grid, List, Filter, RotateCcw, X } from 'lucide-react';
 import { sets } from '../data/allCards';
 import FilterPanel from './shared/FilterPanel';
+import PaginationControls from './shared/PaginationControls';
 import { CardGridView, CardListView, GroupedView } from './card-views';
 import { useCardBrowser } from '../hooks';
 import QuickFilters from './QuickFilters';
 import { RARITY_ICONS, COLOR_ICONS } from '../constants/icons';
+import CardPreviewModal from './CardPreviewModal';
+import { ConsolidatedCard } from '../types';
 
 
 const CardBrowser: React.FC = () => {
+  const [selectedCard, setSelectedCard] = useState<ConsolidatedCard | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const {
     // State
     searchTerm,
@@ -43,6 +49,16 @@ const CardBrowser: React.FC = () => {
     paginatedCards,
     pagination
   } = useCardBrowser();
+
+  const handleCardClick = (card: ConsolidatedCard) => {
+    setSelectedCard(card);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedCard(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -158,36 +174,26 @@ const CardBrowser: React.FC = () => {
         />
       )}
 
-      <div className="flex justify-between items-center mb-4">
-        <div className="text-gray-600">
-          {groupBy !== 'none' ? (
-            `Showing ${totalCards} cards in ${Object.keys(groupedCards).length} groups`
-          ) : (
-            `Showing ${pagination.startIndex + 1}-${Math.min(pagination.endIndex, totalCards)} of ${totalCards} cards`
-          )}
-        </div>
-        {groupBy === 'none' && pagination.totalPages > 1 && (
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={pagination.goToPrevPage}
-              disabled={pagination.currentPage === 1}
-              className="p-2 rounded-lg border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 hover:bg-gray-50 transition-colors"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="text-sm text-gray-600">
-              Page {pagination.currentPage} of {pagination.totalPages}
-            </span>
-            <button
-              onClick={pagination.goToNextPage}
-              disabled={pagination.currentPage === pagination.totalPages}
-              className="p-2 rounded-lg border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 hover:bg-gray-50 transition-colors"
-            >
-              <ChevronRight size={16} />
-            </button>
+      {groupBy !== 'none' ? (
+        <div className="flex justify-between items-center mb-4">
+          <div className="text-gray-600">
+            Showing {totalCards} cards in {Object.keys(groupedCards).length} groups
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <PaginationControls
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          totalItems={totalCards}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          onPageChange={pagination.setCurrentPage}
+          onPrevPage={pagination.goToPrevPage}
+          onNextPage={pagination.goToNextPage}
+          showCompact={true}
+          showBottomControls={false}
+        />
+      )}
 
       {groupBy !== 'none' ? (
         <GroupedView
@@ -199,12 +205,14 @@ const CardBrowser: React.FC = () => {
           rarityIconMap={RARITY_ICONS}
           colorIconMap={COLOR_ICONS}
           sets={sets}
+          onCardClick={handleCardClick}
         />
       ) : viewMode === 'grid' ? (
         <CardGridView
           cards={paginatedCards}
           onQuantityChange={handleVariantQuantityChange}
           getVariantQuantities={getVariantQuantities}
+          onCardClick={handleCardClick}
         />
       ) : (
         <CardListView
@@ -215,58 +223,21 @@ const CardBrowser: React.FC = () => {
           rarityIconMap={RARITY_ICONS}
           colorIconMap={COLOR_ICONS}
           sets={sets}
+          onCardClick={handleCardClick}
         />
       )}
 
-      {groupBy === 'none' && pagination.totalPages > 1 && (
-        <div className="flex justify-center items-center space-x-4 mt-8">
-          <button
-            onClick={pagination.goToPrevPage}
-            disabled={pagination.currentPage === 1}
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 hover:bg-gray-50 transition-colors"
-          >
-            <ChevronLeft size={16} />
-            <span>Previous</span>
-          </button>
-          
-          <div className="flex items-center space-x-2">
-            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-              let pageNum: number;
-              if (pagination.totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (pagination.currentPage <= 3) {
-                pageNum = i + 1;
-              } else if (pagination.currentPage >= pagination.totalPages - 2) {
-                pageNum = pagination.totalPages - 4 + i;
-              } else {
-                pageNum = pagination.currentPage - 2 + i;
-              }
-              
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => pagination.setCurrentPage(pageNum)}
-                  className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                    pageNum === pagination.currentPage
-                      ? 'bg-blue-600 text-white'
-                      : 'border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            onClick={pagination.goToNextPage}
-            disabled={pagination.currentPage === pagination.totalPages}
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 hover:bg-gray-50 transition-colors"
-          >
-            <span>Next</span>
-            <ChevronRight size={16} />
-          </button>
-        </div>
+      {groupBy === 'none' && (
+        <PaginationControls
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          totalItems={totalCards}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          onPageChange={pagination.setCurrentPage}
+          onPrevPage={pagination.goToPrevPage}
+          onNextPage={pagination.goToNextPage}
+        />
       )}
 
       {/* Filter notification bubble */}
@@ -297,6 +268,13 @@ const CardBrowser: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Card Preview Modal */}
+      <CardPreviewModal
+        card={selectedCard}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
       </div>
     </div>
   );

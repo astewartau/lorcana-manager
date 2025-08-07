@@ -1,17 +1,11 @@
-import { sets, colors, costRange, strengthRange, willpowerRange, loreRange } from '../data/allCards';
+import { costRange, strengthRange, willpowerRange, loreRange } from '../data/allCards';
 import { FilterOptions } from '../types';
 
 export const getDefaultFilters = (): FilterOptions => {
-  const defaultSetCodes = sets
-    .filter(s => ['Shimmering Skies', 'Azurite Sea', "Archazia's Island", 'The Reign of Jafar', 'Fabled'].includes(s.name))
-    .map(s => s.code);
-  
-  const nonEmptyColors = colors.filter(color => color);
-
   return {
     search: '',
-    sets: defaultSetCodes,
-    colors: nonEmptyColors,
+    sets: [],
+    colors: [],
     showAnyWithColors: true,
     rarities: [],
     types: [],
