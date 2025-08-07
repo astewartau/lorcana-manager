@@ -55,6 +55,16 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
     setFilters({ ...filters, rarities: newRarities });
   };
 
+  const toggleMyCollectionFilter = () => {
+    const newInMyCollection = filters.inMyCollection === true ? null : true;
+    setFilters({ ...filters, inMyCollection: newInMyCollection });
+  };
+
+  const toggleInkwellFilter = (inkwellOnly: boolean) => {
+    const newInkwellOnly = filters.inkwellOnly === inkwellOnly ? null : inkwellOnly;
+    setFilters({ ...filters, inkwellOnly: newInkwellOnly });
+  };
+
   return (
     <div className="bg-gray-800 rounded-b-lg shadow-md p-2 mb-6">
       <div className="flex flex-wrap items-center gap-2">
@@ -131,6 +141,43 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
         {/* Divider */}
         <div className="h-8 w-px bg-gray-600"></div>
 
+        {/* Inkwell */}
+        <div className="flex gap-1">
+          <button
+            onClick={() => toggleInkwellFilter(true)}
+            className={`p-1 rounded transition-all hover:scale-110 ${
+              filters.inkwellOnly === true
+                ? 'bg-blue-500 shadow-lg'
+                : 'bg-transparent hover:bg-gray-700'
+            }`}
+            title="Inkable"
+          >
+            <img
+              src="/imgs/inkable.png"
+              alt="Inkable"
+              className="w-6 h-6"
+            />
+          </button>
+          <button
+            onClick={() => toggleInkwellFilter(false)}
+            className={`p-1 rounded transition-all hover:scale-110 ${
+              filters.inkwellOnly === false
+                ? 'bg-blue-500 shadow-lg'
+                : 'bg-transparent hover:bg-gray-700'
+            }`}
+            title="Uninkable"
+          >
+            <img
+              src="/imgs/uninkable.png"
+              alt="Uninkable"
+              className="w-6 h-6"
+            />
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="h-8 w-px bg-gray-600"></div>
+
         {/* Rarities */}
         <div className="flex gap-1">
           {rarities.map(rarity => (
@@ -152,6 +199,20 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
             </button>
           ))}
         </div>
+
+        {/* Divider */}
+        <div className="h-8 w-px bg-gray-600"></div>
+
+        {/* My Collection */}
+        <label className="flex items-center space-x-1 text-sm">
+          <input
+            type="checkbox"
+            checked={filters.inMyCollection === true}
+            onChange={toggleMyCollectionFilter}
+            className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+          />
+          <span className="text-gray-300">My collection</span>
+        </label>
       </div>
     </div>
   );

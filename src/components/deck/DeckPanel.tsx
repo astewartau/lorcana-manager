@@ -18,7 +18,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
   onClearDeck,
   validation
 }) => {
-  const { getVariantQuantities, getCardQuantity } = useCollection();
+  const { getVariantQuantities } = useCollection();
   const [groupBy, setGroupBy] = useState<'cost' | 'type' | 'color'>('cost');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [statisticsCollapsed, setStatisticsCollapsed] = useState(false);
@@ -93,9 +93,8 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
   const collectionDistribution = deck.cards.reduce((acc, card) => {
     // Check if card is in collection
     const variantQuantities = getVariantQuantities(card.fullName);
-    const legacyQuantity = getCardQuantity(card.id);
     const totalInCollection = variantQuantities.regular + variantQuantities.foil + 
-                             variantQuantities.enchanted + variantQuantities.special + legacyQuantity;
+                             variantQuantities.enchanted + variantQuantities.special;
     
     const key = totalInCollection > 0 ? 'In Collection' : 'Not in Collection';
     acc[key] = (acc[key] || 0) + card.quantity;

@@ -8,8 +8,7 @@ export const filterCards = (
   searchTerm: string,
   filters: FilterOptions,
   staleCardIds: Set<number>,
-  getVariantQuantities: (fullName: string) => { regular: number; foil: number; enchanted: number; special: number },
-  getCardQuantity: (cardId: number) => number
+  getVariantQuantities: (fullName: string) => { regular: number; foil: number; enchanted: number; special: number }
 ): ConsolidatedCard[] => {
   return cards.filter(consolidatedCard => {
     const { baseCard } = consolidatedCard;
@@ -80,17 +79,14 @@ export const filterCards = (
     const matchesInCollection = filters.inMyCollection === null || (() => {
       const quantities = getVariantQuantities(consolidatedCard.fullName);
       const totalOwned = quantities.regular + quantities.foil + quantities.enchanted + quantities.special;
-      const legacyQuantity = getCardQuantity(baseCard.id);
-      const isInCollection = totalOwned > 0 || legacyQuantity > 0;
+      const isInCollection = totalOwned > 0;
       return filters.inMyCollection ? isInCollection : !isInCollection;
     })();
     
     // Check card count filter
     const matchesCardCount = filters.cardCountOperator === null || (() => {
       const quantities = getVariantQuantities(consolidatedCard.fullName);
-      const totalOwned = quantities.regular + quantities.foil + quantities.enchanted + quantities.special;
-      const legacyQuantity = getCardQuantity(baseCard.id);
-      const totalCount = totalOwned + legacyQuantity;
+      const totalCount = quantities.regular + quantities.foil + quantities.enchanted + quantities.special;
       
       switch (filters.cardCountOperator) {
         case 'eq': return totalCount === filters.cardCountValue;

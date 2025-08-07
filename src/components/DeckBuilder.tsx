@@ -19,7 +19,7 @@ interface DeckBuilderProps {
 
 const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
   const { currentDeck, updateDeck, addCardToDeck, removeCardFromDeck, updateCardQuantity, validateDeck } = useDeck();
-  const { getVariantQuantities, getCardQuantity } = useCollection();
+  const { getVariantQuantities } = useCollection();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -46,7 +46,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
 
   // Filter and sort cards
   const { sortedCards, activeFiltersCount } = useMemo(() => {
-    const filtered = filterCards(consolidatedCards, searchTerm, filters, new Set(), getVariantQuantities, getCardQuantity);
+    const filtered = filterCards(consolidatedCards, searchTerm, filters, new Set(), getVariantQuantities);
     const sorted = sortCards(filtered, sortBy);
     const activeCount = countActiveFilters(filters);
     
@@ -54,7 +54,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
       sortedCards: sorted,
       activeFiltersCount: activeCount
     };
-  }, [searchTerm, filters, sortBy, getVariantQuantities, getCardQuantity]);
+  }, [searchTerm, filters, sortBy, getVariantQuantities]);
 
   const clearAllFilters = () => {
     setFilters(getDefaultFilters());
@@ -78,8 +78,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack }) => {
   // Get total collection quantity for a card (all variants combined)
   const getCollectionQuantity = (consolidatedCard: ConsolidatedCard): number => {
     const variantQuantities = getVariantQuantities(consolidatedCard.fullName);
-    const legacyQuantity = getCardQuantity(consolidatedCard.baseCard.id);
-    return variantQuantities.regular + variantQuantities.foil + variantQuantities.enchanted + variantQuantities.special + legacyQuantity;
+    return variantQuantities.regular + variantQuantities.foil + variantQuantities.enchanted + variantQuantities.special;
   };
 
   const handleUpdateName = () => {

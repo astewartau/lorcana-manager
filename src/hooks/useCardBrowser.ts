@@ -7,7 +7,7 @@ import { filterCards, sortCards, groupCards, countActiveFilters } from '../utils
 import { getDefaultFilters } from '../utils/filterDefaults';
 
 export const useCardBrowser = () => {
-  const { getVariantQuantities, getCardQuantity, addVariantToCollection, removeVariantFromCollection } = useCollection();
+  const { getVariantQuantities, addVariantToCollection, removeVariantFromCollection } = useCollection();
   
   // State management
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,7 +26,7 @@ export const useCardBrowser = () => {
 
   // Computed values using utility functions
   const { sortedCards, groupedCards, totalCards, activeFiltersCount } = useMemo(() => {
-    const filtered = filterCards(consolidatedCards, searchTerm, filters, staleCardIds, getVariantQuantities, getCardQuantity);
+    const filtered = filterCards(consolidatedCards, searchTerm, filters, staleCardIds, getVariantQuantities);
     const sorted = sortCards(filtered, sortBy);
     const grouped = groupCards(sorted, groupBy);
     const activeCount = countActiveFilters(filters);
@@ -37,7 +37,7 @@ export const useCardBrowser = () => {
       totalCards: sorted.length,
       activeFiltersCount: activeCount
     };
-  }, [searchTerm, filters, sortBy, groupBy, getVariantQuantities, getCardQuantity, staleCardIds]);
+  }, [searchTerm, filters, sortBy, groupBy, getVariantQuantities, staleCardIds]);
   
   // Pagination
   const pagination = usePagination({
@@ -86,9 +86,7 @@ export const useCardBrowser = () => {
       
       // Get current quantities before the change to predict future state
       const currentQuantities = getVariantQuantities(consolidatedCard.fullName);
-      const currentTotal = currentQuantities.regular + currentQuantities.foil + currentQuantities.enchanted + currentQuantities.special;
-      const currentLegacyQuantity = getCardQuantity(consolidatedCard.baseCard.id);
-      const currentTotalOwned = currentTotal + currentLegacyQuantity;
+      const currentTotalOwned = currentQuantities.regular + currentQuantities.foil + currentQuantities.enchanted + currentQuantities.special;
       
       // Predict what the state will be after this change
       const predictedTotalOwned = currentTotalOwned + change;
