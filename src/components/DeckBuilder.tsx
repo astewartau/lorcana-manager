@@ -341,14 +341,6 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
             </div>
           </div>
 
-          {/* Deck Panel */}
-          <DeckPanel
-            deck={currentDeck}
-            onRemoveCard={handleRemoveCard}
-            onUpdateQuantity={updateCardQuantity}
-            onClearDeck={clearDeck}
-            validation={validation}
-          />
         </div>
       </div>
     </div>
