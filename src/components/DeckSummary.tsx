@@ -66,12 +66,10 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
     });
   };
 
-  // Get primary ink colors for display
+  // Get ink colors for display (now includes individual colors from dual-ink cards)
   const inkColors = Object.entries(summary.inkDistribution)
     .filter(([, count]) => count > 0)
     .sort(([, a], [, b]) => b - a);
-
-  const baseInkColors = inkColors.filter(([color]) => !color.includes('-'));
 
   return (
     <div className="min-h-screen bg-lorcana-cream">
@@ -128,9 +126,9 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
               </div>
 
               {/* Ink Colors */}
-              {baseInkColors.length > 0 && (
+              {inkColors.length > 0 && (
                 <div className="flex items-center space-x-2 ml-6">
-                  {baseInkColors.map(([color]) => (
+                  {inkColors.map(([color]) => (
                     <div 
                       key={color} 
                       className="relative w-10 h-10 flex items-center justify-center"

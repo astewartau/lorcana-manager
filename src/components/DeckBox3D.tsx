@@ -77,11 +77,8 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
     .filter(([, count]) => count > 0)
     .sort(([, a], [, b]) => b - a);
 
-  // Filter out dual-ink combinations to get only the actual base ink colors
-  const baseInkColors = inkColors.filter(([color]) => !color.includes('-'));
-
-  // Get primary ink color for deckbox styling (use base colors only)
-  const primaryInkColor = baseInkColors[0]?.[0] || inkColors[0]?.[0] || 'Steel';
+  // Get primary ink color for deckbox styling
+  const primaryInkColor = inkColors[0]?.[0] || 'Steel';
   
   const getDeckboxGradient = (color: string) => {
     switch (color) {
@@ -131,10 +128,10 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
               {/* Spacer */}
               <div className="flex-1" />
               
-              {/* Large Ink Color Icons - Base colors only */}
-              {baseInkColors.length > 0 && (
+              {/* Large Ink Color Icons */}
+              {inkColors.length > 0 && (
                 <div className="flex justify-center items-center space-x-1">
-                  {baseInkColors.map(([color]) => (
+                  {inkColors.map(([color]) => (
                     <div 
                       key={color} 
                       className="relative w-10 h-10 flex items-center justify-center"
@@ -166,7 +163,7 @@ const DeckBox3D: React.FC<DeckBox3DProps> = ({
             >
               <div className="text-white/60 text-xs text-center">
                 <div className="font-bold tracking-wide">DECK BOX</div>
-                <div className="text-xs mt-1">{baseInkColors.length} Color{baseInkColors.length !== 1 ? 's' : ''}</div>
+                <div className="text-xs mt-1">{inkColors.length} Color{inkColors.length !== 1 ? 's' : ''}</div>
               </div>
             </div>
             

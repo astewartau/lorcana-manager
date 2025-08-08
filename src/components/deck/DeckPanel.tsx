@@ -391,54 +391,8 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
         {activeTab === 'statistics' && (
           <div className="p-4">
         
-        {/* Pie Charts */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <PieChart 
-            data={inkableDistribution} 
-            title="Inkwell"
-            colors={['#10b981', '#ef4444']} // green for inkable, red for uninkable
-          />
-          
-          <PieChart 
-            data={typeDistribution} 
-            title="Types"
-            colors={['#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4', '#f97316']} // blue, amber, purple, cyan, orange
-          />
-          
-          <PieChart 
-            data={collectionDistribution} 
-            title="Collection"
-            colors={['#10b981', '#ef4444']} // green for in collection, red for not in collection
-          />
-          
-          <PieChart 
-            data={rarityDistribution} 
-            title="Rarity"
-            colors={['#6b7280', '#22c55e', '#3b82f6', '#a855f7', '#f59e0b', '#ec4899']} // gray, green, blue, purple, amber, pink
-          />
-          
-          <PieChart 
-            data={storyDistribution} 
-            title="Story"
-            colors={['#ef4444', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899']}
-          />
-          
-          <PieChart 
-            data={inkDistribution} 
-            title="Ink"
-            colors={Object.keys(inkDistribution).map(color => getInkColorHex(color))} // Use actual ink colors
-          />
-          
-          <PieChart 
-            data={setDistribution} 
-            title="Set"
-            colors={['#1f2937', '#374151', '#4b5563', '#6b7280', '#9ca3af', '#d1d5db']}
-          />
-        </div>
-
         {/* Cost Distribution */}
         <div className="mb-6">
-          <div className="text-xs font-medium text-lorcana-navy mb-2">Cost Curve</div>
           <div className="flex items-end space-x-1 h-24">
             {Array.from({ length: 8 }, (_, i) => i).map(cost => {
               const actualCost = cost === 7 ? '7+' : cost.toString();
@@ -519,6 +473,51 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
               );
             })}
           </div>
+        </div>
+        
+        {/* Pie Charts */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <PieChart 
+            data={inkableDistribution} 
+            title="Inkwell"
+            colors={['#10b981', '#ef4444']} // green for inkable, red for uninkable
+          />
+          
+          <PieChart 
+            data={typeDistribution} 
+            title="Types"
+            colors={['#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4', '#f97316']} // blue, amber, purple, cyan, orange
+          />
+          
+          <PieChart 
+            data={collectionDistribution} 
+            title="Collection"
+            colors={['#10b981', '#ef4444']} // green for in collection, red for not in collection
+          />
+          
+          <PieChart 
+            data={rarityDistribution} 
+            title="Rarity"
+            colors={['#6b7280', '#22c55e', '#3b82f6', '#a855f7', '#f59e0b', '#ec4899']} // gray, green, blue, purple, amber, pink
+          />
+          
+          <PieChart 
+            data={storyDistribution} 
+            title="Story"
+            colors={['#ef4444', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899']}
+          />
+          
+          <PieChart 
+            data={inkDistribution} 
+            title="Ink"
+            colors={Object.keys(inkDistribution).map(color => getInkColorHex(color))} // Use actual ink colors
+          />
+          
+          <PieChart 
+            data={setDistribution} 
+            title="Set"
+            colors={['#1f2937', '#374151', '#4b5563', '#6b7280', '#9ca3af', '#d1d5db']}
+          />
         </div>
           </div>
         )}

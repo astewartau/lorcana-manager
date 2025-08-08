@@ -195,7 +195,16 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
     
     deck.cards.forEach(card => {
       const color = card.color || 'None';
-      inkDistribution[color] = (inkDistribution[color] || 0) + card.quantity;
+      
+      // Handle dual-ink cards by splitting them into individual colors
+      if (color.includes('-')) {
+        const colors = color.split('-');
+        colors.forEach(individualColor => {
+          inkDistribution[individualColor] = (inkDistribution[individualColor] || 0) + card.quantity;
+        });
+      } else {
+        inkDistribution[color] = (inkDistribution[color] || 0) + card.quantity;
+      }
     });
 
     const { isValid } = validateDeck(deck);
