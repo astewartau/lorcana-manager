@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Package, Layers3 } from 'lucide-react';
+import { BookOpen, Package, Layers3, User, LogOut } from 'lucide-react';
 import CardBrowser from './components/CardBrowser';
 import Collection from './components/Collection';
 import MyDecks from './components/MyDecks';
 import DeckBuilder from './components/DeckBuilder';
 import DeckSummary from './components/DeckSummary';
+import LoginModal from './components/LoginModal';
+import MigrationPrompt from './components/MigrationPrompt';
 import { CollectionProvider } from './contexts/CollectionContext';
 import { DeckProvider } from './contexts/DeckContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 type Tab = 'browse' | 'collection' | 'decks' | 'deck-builder' | 'deck-summary';
 
-function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState<Tab>('browse');
   const [navVisible, setNavVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { user, signOut, loading } = useAuth();
 
   const tabs = [
     { id: 'browse' as Tab, label: 'Cards', icon: BookOpen },
@@ -80,23 +85,78 @@ function App() {
         <div className="min-h-screen bg-lorcana-cream">
           {/* Mobile Header - Full Width */}
           <div className="sm:hidden bg-lorcana-navy shadow-xl border-b-2 border-lorcana-gold">
-            <header className="px-4 py-3 text-center">
-              <h1 className="text-xl font-bold text-lorcana-gold tracking-wide">
-                Lorcana Manager
-              </h1>
+            <header className="px-4 py-3 flex items-center justify-between">
+              <div className="flex-1 text-center">
+                <h1 className="text-xl font-bold text-lorcana-gold tracking-wide">
+                  Lorcana Manager
+                </h1>
+              </div>
+              
+              {/* Mobile Auth */}
+              <div className="flex-shrink-0">
+                {loading ? (
+                  <div className="w-8 h-8 rounded-full bg-lorcana-cream/20 animate-pulse"></div>
+                ) : user ? (
+                  <button
+                    onClick={() => signOut()}
+                    className="p-2 text-lorcana-cream hover:text-lorcana-gold transition-colors"
+                    title={`Sign out ${user.email}`}
+                  >
+                    <LogOut size={20} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowLoginModal(true)}
+                    className="p-2 text-lorcana-gold hover:text-lorcana-cream transition-colors"
+                  >
+                    <User size={20} />
+                  </button>
+                )}
+              </div>
             </header>
           </div>
 
           <div className="container mx-auto px-2 sm:px-4 py-0 sm:py-6">
             {/* Desktop Header section */}
             <div className="hidden sm:block bg-lorcana-navy rounded-t-sm shadow-xl border-2 border-lorcana-gold border-b-0">
-              <header className="p-6 pb-4">
+              <header className="p-6 pb-4 relative">
                 <h1 className="text-4xl font-bold text-lorcana-gold mb-2 text-center tracking-wider">
                   Lorcana Collection Manager
                 </h1>
                 <p className="text-lorcana-cream text-center">
                   Manage your Disney Lorcana TCG collection
                 </p>
+                
+                {/* Auth section - top right */}
+                <div className="absolute top-4 right-6">
+                  {loading ? (
+                    <div className="text-lorcana-cream">Loading...</div>
+                  ) : user ? (
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2 text-lorcana-cream">
+                        <User size={18} />
+                        <span className="text-sm truncate max-w-32" title={user.email}>
+                          {user.email}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => signOut()}
+                        className="flex items-center space-x-1 px-3 py-1 text-sm text-lorcana-cream hover:text-lorcana-gold border border-lorcana-cream/30 hover:border-lorcana-gold rounded-sm transition-colors"
+                      >
+                        <LogOut size={14} />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowLoginModal(true)}
+                      className="flex items-center space-x-2 px-4 py-2 bg-lorcana-gold text-lorcana-navy rounded-sm hover:bg-lorcana-cream transition-colors font-medium"
+                    >
+                      <User size={16} />
+                      <span>Sign In</span>
+                    </button>
+                  )}
+                </div>
               </header>
 
               {/* Desktop Navigation - always visible */}
@@ -164,8 +224,25 @@ function App() {
             <main className="pb-20 sm:pb-0">{renderContent()}</main>
           </div>
         </div>
+        
+        {/* Login Modal */}
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+        />
+        
+        {/* Migration Prompt */}
+        <MigrationPrompt />
       </DeckProvider>
     </CollectionProvider>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

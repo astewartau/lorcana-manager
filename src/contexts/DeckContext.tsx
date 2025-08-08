@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Deck, LorcanaCard, DeckSummary } from '../types';
 import { validateDeck as validateDeckUtil } from '../utils/deckValidation';
+// TODO: Implement Supabase sync for decks
+// import { supabase, UserDeck, TABLES } from '../lib/supabase';
+// import { useAuth } from './AuthContext';
 
 const STORAGE_KEY = 'lorcana_decks';
 const CURRENT_DECK_KEY = 'lorcana_current_deck';
