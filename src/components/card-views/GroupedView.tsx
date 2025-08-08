@@ -16,7 +16,7 @@ interface GroupedViewProps {
   staleCardIds: Set<number>;
   rarityIconMap: Record<string, string>;
   colorIconMap: Record<string, string>;
-  sets: Array<{code: string; name: string}>;
+  sets: Array<{code: string; name: string; number: number}>;
   onCardClick?: (card: ConsolidatedCard) => void;
 }
 

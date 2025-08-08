@@ -1,4 +1,5 @@
 import React from 'react';
+import { Plus, Minus } from 'lucide-react';
 import { ConsolidatedCard } from '../../types';
 
 interface CardListViewProps {
@@ -13,7 +14,7 @@ interface CardListViewProps {
   staleCardIds: Set<number>;
   rarityIconMap: Record<string, string>;
   colorIconMap: Record<string, string>;
-  sets: Array<{code: string; name: string}>;
+  sets: Array<{code: string; name: string; number: number}>;
   onCardClick?: (card: ConsolidatedCard) => void;
 }
 
@@ -27,44 +28,60 @@ const CardListView: React.FC<CardListViewProps> = ({
   sets,
   onCardClick
 }) => {
-  // Ultra-compact quantity control
+  // Get variant background styling like the full view
+  const getVariantBackground = (variantType: 'regular' | 'foil' | 'enchanted' | 'special') => {
+    switch (variantType) {
+      case 'regular':
+        return 'bg-lorcana-cream border-lorcana-gold';
+      case 'foil':
+        return 'bg-gradient-to-r from-blue-200 via-indigo-200 to-blue-300 border-blue-500';
+      case 'enchanted':
+        return 'bg-gradient-to-r from-pink-200 via-purple-200 to-pink-300 border-pink-500';
+      case 'special':
+        return 'bg-gradient-to-r from-yellow-200 via-orange-200 to-yellow-300 border-orange-500';
+      default:
+        return 'bg-lorcana-cream border-lorcana-gold';
+    }
+  };
+
+  // Compact quantity control with proper button styling
   const renderMiniControl = (
     consolidatedCard: ConsolidatedCard,
     variantType: 'regular' | 'foil' | 'enchanted' | 'special',
     quantity: number,
-    isAvailable: boolean,
-    label: string
+    isAvailable: boolean
   ) => {
     if (!isAvailable) return null;
     return (
-      <div className="flex items-center space-x-0.5 text-xs">
-        <span className="text-gray-500 font-medium">{label}:</span>
+      <div className={`flex items-center justify-between px-1.5 py-0.5 rounded border ${getVariantBackground(variantType)} transition-all`}>
         <button
           onClick={(e) => {
             e.stopPropagation();
             onQuantityChange(consolidatedCard, variantType, -1);
           }}
           disabled={quantity <= 0}
-          className="px-1 hover:bg-black hover:bg-opacity-10 rounded disabled:opacity-50 text-gray-600"
+          className="p-0.5 rounded text-red-600 hover:text-red-800 transition-colors disabled:text-gray-400"
         >
-          -
+          <Minus size={8} />
         </button>
-        <span className="min-w-[16px] text-center font-semibold">{quantity}</span>
+        <span className="font-semibold text-xs min-w-[1rem] text-center text-lorcana-ink">
+          {quantity}
+        </span>
         <button
           onClick={(e) => {
             e.stopPropagation();
             onQuantityChange(consolidatedCard, variantType, 1);
           }}
-          className="px-1 hover:bg-black hover:bg-opacity-10 rounded text-gray-600"
+          className="p-0.5 rounded text-green-600 hover:text-green-800 transition-colors"
         >
-          +
+          <Plus size={8} />
         </button>
       </div>
     );
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-1">
+    <div className="columns-1 xl:columns-2 gap-0">
       {cards.map((consolidatedCard) => {
         const { baseCard, hasEnchanted, hasSpecial } = consolidatedCard;
         const quantities = getVariantQuantities(consolidatedCard.fullName);
@@ -74,26 +91,28 @@ const CardListView: React.FC<CardListViewProps> = ({
         return (
           <div 
             key={baseCard.id} 
-            className={`bg-white p-2 rounded hover:shadow-lg transition-all duration-300 ease-out flex items-center space-x-2 text-xs border border-gray-200 hover:scale-[1.02] hover:-translate-y-0.5 cursor-pointer transform-gpu ${
-              staleCardIds.has(baseCard.id) ? 'bg-orange-50 border-orange-300' : ''
+            className={`bg-lorcana-navy p-2 rounded-sm hover:shadow-xl transition-all duration-300 ease-out flex items-center space-x-2 text-xs border-2 border-lorcana-gold hover:scale-[1.02] hover:-translate-y-0.5 cursor-pointer transform-gpu break-inside-avoid ${
+              staleCardIds.has(baseCard.id) ? 'bg-orange-200 border-orange-400' : ''
             }`}
             onClick={() => onCardClick?.(consolidatedCard)}
           >
-            {/* Card Number */}
-            <span className="font-mono text-gray-700 font-semibold w-12 text-center">#{baseCard.number}</span>
+            {/* Set/Card Number */}
+            <span className="font-mono text-lorcana-cream font-semibold w-16 text-center">
+              {setInfo?.number || '?'}/#{baseCard.number}
+            </span>
             
             {/* Rarity */}
             {rarityIconMap[baseCard.rarity] && (
               <img 
                 src={rarityIconMap[baseCard.rarity]} 
                 alt={baseCard.rarity}
-                className="w-3 h-3 flex-shrink-0"
+                className="w-4 h-4 flex-shrink-0"
               />
             )}
             
             {/* Ink Color Icon */}
             {baseCard.color && (
-              <div className="flex-shrink-0 w-4 h-4 relative">
+              <div className="flex-shrink-0 w-5 h-5 relative">
                 {baseCard.color.includes('-') ? (
                   // Dual-ink cards: show both icons split diagonally
                   (() => {
@@ -102,13 +121,13 @@ const CardListView: React.FC<CardListViewProps> = ({
                     const icon2 = colorIconMap[color2];
                     if (icon1 && icon2) {
                       return (
-                        <div className="relative w-4 h-4">
+                        <div className="relative w-5 h-5">
                           {/* First color (top-left triangle) */}
                           <div className="absolute inset-0 overflow-hidden">
                             <img 
                               src={icon1} 
                               alt={color1}
-                              className="w-4 h-4"
+                              className="w-5 h-5"
                               style={{
                                 clipPath: 'polygon(0 0, 100% 0, 0 100%)'
                               }}
@@ -119,7 +138,7 @@ const CardListView: React.FC<CardListViewProps> = ({
                             <img 
                               src={icon2} 
                               alt={color2}
-                              className="w-4 h-4"
+                              className="w-5 h-5"
                               style={{
                                 clipPath: 'polygon(100% 0, 100% 100%, 0 100%)'
                               }}
@@ -145,58 +164,48 @@ const CardListView: React.FC<CardListViewProps> = ({
                     <img 
                       src={colorIconMap[baseCard.color]} 
                       alt={baseCard.color}
-                      className="w-4 h-4"
+                      className="w-5 h-5"
                     />
                   )
                 )}
               </div>
             )}
             
-            {/* Set */}
-            <span className="text-gray-600 text-xs w-10 truncate" title={setInfo?.name || baseCard.setCode}>
-              {setInfo?.code || baseCard.setCode}
-            </span>
+            {/* Ink Cost */}
+            <div className="relative flex-shrink-0">
+              <img
+                src={baseCard.inkwell ? "/imgs/inkable.png" : "/imgs/uninkable.png"}
+                alt={baseCard.inkwell ? "Inkable" : "Uninkable"}
+                className="w-5 h-5"
+              />
+              <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+                {baseCard.cost}
+              </span>
+            </div>
+
             
             {/* Main Info Section - Flexible Width */}
             <div className="flex-1 flex items-center space-x-2 min-w-0">
               {/* Card Name */}
-              <span className="font-semibold text-gray-900 truncate">{baseCard.name}</span>
+              <span className="font-semibold text-white truncate">{baseCard.name}</span>
               
               {/* Version if exists */}
               {baseCard.version && (
-                <span className="text-gray-600 truncate">- {baseCard.version}</span>
+                <span className="text-lorcana-cream truncate">- {baseCard.version}</span>
               )}
             </div>
             
-            {/* Stats with emojis */}
-            <div className="flex items-center space-x-2 flex-shrink-0">
-              {baseCard.strength !== undefined && (
-                <span className="text-gray-700 font-medium" title="Strength">
-                  💪{baseCard.strength}
-                </span>
-              )}
-              {baseCard.willpower !== undefined && (
-                <span className="text-gray-700 font-medium" title="Willpower">
-                  🛡️{baseCard.willpower}
-                </span>
-              )}
-              {baseCard.lore !== undefined && (
-                <span className="text-gray-700 font-medium" title="Lore">
-                  ◆{baseCard.lore}
-                </span>
-              )}
-            </div>
             
             {/* Controls Section - Fixed Width */}
-            <div className="flex items-center space-x-2 flex-shrink-0">
-              {renderMiniControl(consolidatedCard, 'regular', quantities.regular, consolidatedCard.hasRegular, 'R')}
-              {renderMiniControl(consolidatedCard, 'foil', quantities.foil, consolidatedCard.hasFoil, 'F')}
-              {hasEnchanted && renderMiniControl(consolidatedCard, 'enchanted', quantities.enchanted, true, 'E')}
-              {hasSpecial && renderMiniControl(consolidatedCard, 'special', quantities.special, true, 'S')}
+            <div className="flex items-center space-x-1 flex-shrink-0">
+              {renderMiniControl(consolidatedCard, 'regular', quantities.regular, consolidatedCard.hasRegular)}
+              {renderMiniControl(consolidatedCard, 'foil', quantities.foil, consolidatedCard.hasFoil)}
+              {hasEnchanted && renderMiniControl(consolidatedCard, 'enchanted', quantities.enchanted, true)}
+              {hasSpecial && renderMiniControl(consolidatedCard, 'special', quantities.special, true)}
               
               {/* Total */}
-              <div className="ml-2 pl-2 border-l border-gray-400">
-                <span className="font-semibold text-gray-700">T:{totalOwned}</span>
+              <div className="ml-2 pl-2 border-l border-lorcana-gold">
+                <span className="font-semibold text-lorcana-gold">T:{totalOwned}</span>
               </div>
             </div>
           </div>
