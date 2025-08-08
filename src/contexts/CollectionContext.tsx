@@ -84,14 +84,16 @@ export const CollectionProvider: React.FC<CollectionProviderProps> = ({ children
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Real-time collection change:', payload);
+          console.log('🔄 Real-time collection change received:', payload);
           handleRealtimeChange(payload);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Real-time subscription status:', status);
+      });
 
     return () => {
-      console.log('Cleaning up real-time subscription');
+      console.log('🧹 Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, [user, session]);

@@ -7,6 +7,7 @@ import DeckBuilder from './components/DeckBuilder';
 import DeckSummary from './components/DeckSummary';
 import LoginModal from './components/LoginModal';
 import MigrationPrompt from './components/MigrationPrompt';
+import RealtimeStatus from './components/RealtimeStatus';
 import { CollectionProvider } from './contexts/CollectionContext';
 import { DeckProvider } from './contexts/DeckContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -233,6 +234,9 @@ function AppContent() {
         
         {/* Migration Prompt */}
         <MigrationPrompt />
+        
+        {/* Real-time Status Indicator */}
+        <RealtimeStatus />
       </DeckProvider>
     </CollectionProvider>
   );
