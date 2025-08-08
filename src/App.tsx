@@ -6,8 +6,6 @@ import MyDecks from './components/MyDecks';
 import DeckBuilder from './components/DeckBuilder';
 import DeckSummary from './components/DeckSummary';
 import LoginModal from './components/LoginModal';
-import MigrationPrompt from './components/MigrationPrompt';
-import RealtimeStatus from './components/RealtimeStatus';
 import { CollectionProvider } from './contexts/CollectionContext';
 import { DeckProvider } from './contexts/DeckContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -108,6 +106,7 @@ function AppContent() {
                 ) : (
                   <button
                     onClick={() => setShowLoginModal(true)}
+                    data-sign-in-button
                     className="p-2 text-lorcana-gold hover:text-lorcana-cream transition-colors"
                   >
                     <User size={20} />
@@ -151,6 +150,7 @@ function AppContent() {
                   ) : (
                     <button
                       onClick={() => setShowLoginModal(true)}
+                      data-sign-in-button
                       className="flex items-center space-x-2 px-4 py-2 bg-lorcana-gold text-lorcana-navy rounded-sm hover:bg-lorcana-cream transition-colors font-medium"
                     >
                       <User size={16} />
@@ -231,12 +231,6 @@ function AppContent() {
           isOpen={showLoginModal}
           onClose={() => setShowLoginModal(false)}
         />
-        
-        {/* Migration Prompt */}
-        <MigrationPrompt />
-        
-        {/* Real-time Status Indicator */}
-        <RealtimeStatus />
       </DeckProvider>
     </CollectionProvider>
   );

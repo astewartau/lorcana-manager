@@ -3,32 +3,6 @@ import { CollectionCardVariants, ConsolidatedCard } from '../types';
 import { supabase, UserCollection, TABLES } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
-// localStorage keys (for offline backup)
-const STORAGE_KEYS = {
-  COLLECTION_VARIANTS: 'lorcana_collection_variants'
-};
-
-
-// Helper functions for localStorage operations
-const loadFromStorage = <T,>(key: string, defaultValue: T): T => {
-  try {
-    const item = localStorage.getItem(key);
-    if (item === null) return defaultValue;
-    return JSON.parse(item);
-  } catch (error) {
-    console.warn(`Failed to load ${key} from localStorage:`, error);
-    return defaultValue;
-  }
-};
-
-const saveToStorage = <T,>(key: string, value: T): void => {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error(`Failed to save ${key} to localStorage:`, error);
-  }
-};
-
 interface CollectionContextType {
   variantCollection: CollectionCardVariants[];
   getVariantQuantities: (fullName: string) => { regular: number; foil: number; enchanted: number; special: number };
@@ -60,50 +34,12 @@ export const CollectionProvider: React.FC<CollectionProviderProps> = ({ children
     if (user && session) {
       loadCollectionFromSupabase();
     } else {
-      // Load from localStorage when not authenticated
-      setVariantCollection(loadFromStorage(STORAGE_KEYS.COLLECTION_VARIANTS, []));
+      // Clear collection when not authenticated
+      setVariantCollection([]);
       setIsInitialized(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, session]);
-
-  // Set up real-time subscription for collection changes
-  useEffect(() => {
-    if (!user || !session) return;
-
-    console.log('Setting up real-time subscription for user:', user.id);
-
-    const channel = supabase
-      .channel('collection_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: TABLES.USER_COLLECTIONS,
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('🔄 Real-time collection change received:', payload);
-          handleRealtimeChange(payload);
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 Real-time subscription status:', status);
-      });
-
-    return () => {
-      console.log('🧹 Cleaning up real-time subscription');
-      supabase.removeChannel(channel);
-    };
-  }, [user, session]);
-
-  // Save to localStorage as backup whenever collection changes
-  useEffect(() => {
-    if (isInitialized) {
-      saveToStorage(STORAGE_KEYS.COLLECTION_VARIANTS, variantCollection);
-    }
-  }, [variantCollection, isInitialized]);
 
   const loadCollectionFromSupabase = async () => {
     if (!user) return;
@@ -118,8 +54,8 @@ export const CollectionProvider: React.FC<CollectionProviderProps> = ({ children
       if (error) {
         console.error('Error loading collection:', error);
         setSyncStatus('error');
-        // Fallback to localStorage
-        setVariantCollection(loadFromStorage(STORAGE_KEYS.COLLECTION_VARIANTS, []));
+        // No fallback - require authentication
+        setVariantCollection([]);
       } else {
         // Convert UserCollection[] to CollectionCardVariants[]
         const converted = data.map((item: UserCollection) => ({
@@ -140,54 +76,12 @@ export const CollectionProvider: React.FC<CollectionProviderProps> = ({ children
     } catch (error) {
       console.error('Network error loading collection:', error);
       setSyncStatus('offline');
-      // Fallback to localStorage
-      setVariantCollection(loadFromStorage(STORAGE_KEYS.COLLECTION_VARIANTS, []));
+      // No fallback - require authentication
+      setVariantCollection([]);
     }
     setIsInitialized(true);
   };
 
-  const handleRealtimeChange = (payload: any) => {
-    const { eventType, new: newRecord, old: oldRecord } = payload;
-    
-    setVariantCollection(prev => {
-      switch (eventType) {
-        case 'INSERT':
-        case 'UPDATE':
-          if (newRecord) {
-            const updatedCard: CollectionCardVariants = {
-              cardId: 0, // We don't store cardId in Supabase
-              fullName: newRecord.card_name,
-              regular: newRecord.regular_count,
-              foil: newRecord.foil_count,
-              enchanted: newRecord.enchanted_count,
-              special: newRecord.special_count
-            };
-
-            const existingIndex = prev.findIndex(card => card.fullName === newRecord.card_name);
-            if (existingIndex >= 0) {
-              // Update existing card
-              const newCollection = [...prev];
-              newCollection[existingIndex] = updatedCard;
-              return newCollection;
-            } else {
-              // Add new card
-              return [...prev, updatedCard];
-            }
-          }
-          break;
-
-        case 'DELETE':
-          if (oldRecord) {
-            return prev.filter(card => card.fullName !== oldRecord.card_name);
-          }
-          break;
-
-        default:
-          break;
-      }
-      return prev;
-    });
-  };
 
   const syncCardToSupabase = async (card: CollectionCardVariants) => {
     if (!user) return;
@@ -237,42 +131,8 @@ export const CollectionProvider: React.FC<CollectionProviderProps> = ({ children
   };
 
   const migrateFromLocalStorage = async () => {
-    if (!user) return;
-    
-    const localData = loadFromStorage<CollectionCardVariants[]>(STORAGE_KEYS.COLLECTION_VARIANTS, []);
-    if (localData.length === 0) return;
-    
-    setSyncStatus('loading');
-    try {
-      // Upload all local data to Supabase
-      const supabaseData = localData.map(card => ({
-        user_id: user.id,
-        card_name: card.fullName,
-        regular_count: card.regular,
-        foil_count: card.foil,
-        enchanted_count: card.enchanted,
-        special_count: card.special
-      }));
-
-      const { error } = await supabase
-        .from(TABLES.USER_COLLECTIONS)
-        .upsert(supabaseData, {
-          onConflict: 'user_id,card_name'
-        });
-
-      if (error) {
-        console.error('Error migrating collection:', error);
-        setSyncStatus('error');
-      } else {
-        setSyncStatus('idle');
-        console.log(`Migrated ${localData.length} cards to cloud`);
-        // Mark migration as completed for this user
-        localStorage.setItem(`migration_completed_${user.id}`, 'true');
-      }
-    } catch (error) {
-      console.error('Network error during migration:', error);
-      setSyncStatus('offline');
-    }
+    // Migration no longer needed since we don't use localStorage
+    return;
   };
 
   const getVariantQuantities = (fullName: string) => {
@@ -381,7 +241,6 @@ export const CollectionProvider: React.FC<CollectionProviderProps> = ({ children
 
   const clearCollection = async () => {
     setVariantCollection([]);
-    localStorage.removeItem(STORAGE_KEYS.COLLECTION_VARIANTS);
     
     // Clear from Supabase if user is authenticated
     if (user) {

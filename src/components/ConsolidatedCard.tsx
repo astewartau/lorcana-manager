@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Plus, Minus } from 'lucide-react';
 import { ConsolidatedCard } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ConsolidatedCardProps {
   consolidatedCard: ConsolidatedCard;
@@ -15,6 +16,7 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
   onQuantityChange,
   onCardClick
 }) => {
+  const { user } = useAuth();
   const { baseCard, hasEnchanted, hasSpecial, enchantedCard } = consolidatedCard;
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -184,13 +186,15 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
         
       </div>
 
-      {/* Quantity controls below card - all in one centered row */}
-      <div className="flex justify-center space-x-1">
-        {renderQuantityControl('regular', quantities.regular, consolidatedCard.hasRegular)}
-        {renderQuantityControl('foil', quantities.foil, consolidatedCard.hasFoil)}
-        {hasEnchanted && renderQuantityControl('enchanted', quantities.enchanted, true)}
-        {hasSpecial && renderQuantityControl('special', quantities.special, true)}
-      </div>
+      {/* Quantity controls below card - only show when authenticated */}
+      {user && (
+        <div className="flex justify-center space-x-1">
+          {renderQuantityControl('regular', quantities.regular, consolidatedCard.hasRegular)}
+          {renderQuantityControl('foil', quantities.foil, consolidatedCard.hasFoil)}
+          {hasEnchanted && renderQuantityControl('enchanted', quantities.enchanted, true)}
+          {hasSpecial && renderQuantityControl('special', quantities.special, true)}
+        </div>
+      )}
     </div>
   );
 };

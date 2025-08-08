@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Plus, Upload, FileText } from 'lucide-react';
 import { useDeck } from '../contexts/DeckContext';
+import { useAuth } from '../contexts/AuthContext';
 import DeckBox3D from './DeckBox3D';
+import AuthRequired from './AuthRequired';
 
 interface MyDecksProps {
   onBuildDeck: (deckId?: string) => void;
@@ -9,6 +11,7 @@ interface MyDecksProps {
 }
 
 const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
+  const { user } = useAuth();
   const { decks, createDeck, deleteDeck, duplicateDeck, getDeckSummary, exportDeck, importDeck, setCurrentDeck } = useDeck();
   const [showNewDeckForm, setShowNewDeckForm] = useState(false);
   const [newDeckName, setNewDeckName] = useState('');
@@ -59,6 +62,20 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
     };
     input.click();
   };
+
+  // Show auth required if not signed in
+  if (!user) {
+    return (
+      <AuthRequired 
+        feature="decks" 
+        onSignIn={() => {
+          // Open login modal - need to pass this from App.tsx
+          const signInButton = document.querySelector('[data-sign-in-button]') as HTMLButtonElement;
+          if (signInButton) signInButton.click();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

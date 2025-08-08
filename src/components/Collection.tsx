@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Package, Upload, Trash2, TrendingUp, Star } from 'lucide-react';
 import { useCollection } from '../contexts/CollectionContext';
+import { useAuth } from '../contexts/AuthContext';
 import { consolidatedCards, sets } from '../data/allCards';
 import { RARITY_ICONS } from '../constants/icons';
 import DreambornImport from './DreambornImport';
+import AuthRequired from './AuthRequired';
 
 interface SetSummary {
   code: string;
@@ -17,6 +19,7 @@ interface SetSummary {
 }
 
 const Collection: React.FC = () => {
+  const { user } = useAuth();
   const {
     getVariantQuantities,
     totalCards,
@@ -130,6 +133,20 @@ const Collection: React.FC = () => {
     if (percentage >= 25) return 'bg-orange-500';
     return 'bg-red-500';
   };
+
+  // Show auth required if not signed in
+  if (!user) {
+    return (
+      <AuthRequired 
+        feature="collection" 
+        onSignIn={() => {
+          // Open login modal - need to pass this from App.tsx
+          const signInButton = document.querySelector('[data-sign-in-button]') as HTMLButtonElement;
+          if (signInButton) signInButton.click();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
