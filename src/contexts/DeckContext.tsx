@@ -1,54 +1,19 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Deck, LorcanaCard, DeckSummary } from '../types';
+import { Deck, LorcanaCard, DeckSummary, DeckCard } from '../types';
 import { validateDeck as validateDeckUtil } from '../utils/deckValidation';
-// TODO: Implement Supabase sync for decks
-// import { supabase, UserDeck, TABLES } from '../lib/supabase';
-// import { useAuth } from './AuthContext';
-
-const STORAGE_KEY = 'lorcana_decks';
-const CURRENT_DECK_KEY = 'lorcana_current_deck';
-
-const loadFromStorage = <T,>(key: string, defaultValue: T): T => {
-  try {
-    const item = localStorage.getItem(key);
-    if (item === null) return defaultValue;
-    const parsed = JSON.parse(item);
-    if (key === STORAGE_KEY && Array.isArray(parsed)) {
-      return parsed.map(deck => ({
-        ...deck,
-        createdAt: new Date(deck.createdAt),
-        updatedAt: new Date(deck.updatedAt)
-      })) as T;
-    }
-    if (key === CURRENT_DECK_KEY && parsed) {
-      return {
-        ...parsed,
-        createdAt: new Date(parsed.createdAt),
-        updatedAt: new Date(parsed.updatedAt)
-      } as T;
-    }
-    return parsed;
-  } catch (error) {
-    console.warn(`Failed to load ${key} from localStorage:`, error);
-    return defaultValue;
-  }
-};
-
-const saveToStorage = <T,>(key: string, value: T): void => {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error(`Failed to save ${key} to localStorage:`, error);
-  }
-};
+import { supabase, UserDeck, TABLES } from '../lib/supabase';
+import { useAuth } from './AuthContext';
+import { v4 as uuidv4 } from 'uuid';
 
 interface DeckContextType {
   decks: Deck[];
+  publicDecks: Deck[];
   currentDeck: Deck | null;
-  createDeck: (name: string, description?: string) => string;
-  deleteDeck: (deckId: string) => void;
-  duplicateDeck: (deckId: string) => string;
-  updateDeck: (deck: Deck) => void;
+  loading: boolean;
+  createDeck: (name: string, description?: string) => Promise<string>;
+  deleteDeck: (deckId: string) => Promise<void>;
+  duplicateDeck: (deckId: string) => Promise<string>;
+  updateDeck: (deck: Deck) => Promise<void>;
   setCurrentDeck: (deck: Deck | null) => void;
   addCardToDeck: (card: LorcanaCard, deckId?: string) => boolean;
   removeCardFromDeck: (cardId: number, deckId?: string) => void;
@@ -57,7 +22,10 @@ interface DeckContextType {
   validateDeck: (deck: Deck) => { isValid: boolean; errors: string[] };
   clearCurrentDeck: () => void;
   exportDeck: (deckId: string) => string;
-  importDeck: (deckData: string) => boolean;
+  importDeck: (deckData: string) => Promise<boolean>;
+  publishDeck: (deckId: string) => Promise<void>;
+  unpublishDeck: (deckId: string) => Promise<void>;
+  loadPublicDecks: (searchTerm?: string) => Promise<void>;
 }
 
 const DeckContext = createContext<DeckContextType | undefined>(undefined);
@@ -67,64 +35,223 @@ interface DeckProviderProps {
 }
 
 export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
-  const [decks, setDecks] = useState<Deck[]>(() => 
-    loadFromStorage(STORAGE_KEY, [])
-  );
-  const [currentDeck, setCurrentDeck] = useState<Deck | null>(() =>
-    loadFromStorage(CURRENT_DECK_KEY, null)
-  );
+  const { user, session } = useAuth();
+  const [decks, setDecks] = useState<Deck[]>([]);
+  const [publicDecks, setPublicDecks] = useState<Deck[]>([]);
+  const [currentDeck, setCurrentDeck] = useState<Deck | null>(null);
+  const [loading, setLoading] = useState(false);
 
+  // Load user's decks when authenticated
   useEffect(() => {
-    saveToStorage(STORAGE_KEY, decks);
-  }, [decks]);
+    if (user && session) {
+      loadUserDecks();
+    } else {
+      setDecks([]);
+      setCurrentDeck(null);
+    }
+  }, [user, session]);
 
-  useEffect(() => {
-    saveToStorage(CURRENT_DECK_KEY, currentDeck);
-  }, [currentDeck]);
+  const loadUserDecks = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.USER_DECKS)
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
 
-  const createDeck = (name: string, description?: string): string => {
+      if (error) {
+        console.error('Error loading decks:', error);
+      } else if (data) {
+        const convertedDecks = data.map((d: UserDeck) => ({
+          id: d.id,
+          name: d.name,
+          description: d.description,
+          cards: d.cards as DeckCard[],
+          createdAt: new Date(d.created_at),
+          updatedAt: new Date(d.updated_at),
+          isPublic: d.is_public,
+          userId: d.user_id,
+          authorEmail: user.email
+        }));
+        setDecks(convertedDecks);
+      }
+    } catch (error) {
+      console.error('Error loading decks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadPublicDecks = async (searchTerm?: string) => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from(TABLES.USER_DECKS)
+        .select('*')
+        .eq('is_public', true)
+        .order('updated_at', { ascending: false })
+        .limit(50);
+
+      if (searchTerm) {
+        query = query.ilike('name', `%${searchTerm}%`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error loading public decks:', error);
+        console.error('Query error details:', error.message);
+      } else if (data) {
+        console.log('Found public decks:', data.length);
+        const convertedDecks = data.map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          description: d.description,
+          cards: d.cards as DeckCard[],
+          createdAt: new Date(d.created_at),
+          updatedAt: new Date(d.updated_at),
+          isPublic: d.is_public,
+          userId: d.user_id,
+          authorEmail: `User ${d.user_id.slice(0, 8)}...` // Show partial user ID instead
+        }));
+        setPublicDecks(convertedDecks);
+      }
+    } catch (error) {
+      console.error('Error loading public decks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createDeck = async (name: string, description?: string): Promise<string> => {
+    if (!user) throw new Error('Authentication required');
+    
     const newDeck: Deck = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       name,
       description,
       cards: [],
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      isPublic: false,
+      userId: user.id,
+      authorEmail: user.email
     };
-    
-    setDecks(prev => [...prev, newDeck]);
-    setCurrentDeck(newDeck);
-    return newDeck.id;
-  };
 
-  const deleteDeck = (deckId: string) => {
-    setDecks(prev => prev.filter(d => d.id !== deckId));
-    if (currentDeck?.id === deckId) {
-      setCurrentDeck(null);
+    try {
+      const { error } = await supabase
+        .from(TABLES.USER_DECKS)
+        .insert({
+          id: newDeck.id,
+          user_id: user.id,
+          name: newDeck.name,
+          description: newDeck.description,
+          cards: newDeck.cards,
+          is_public: false
+        });
+
+      if (error) {
+        console.error('Error creating deck:', error);
+        throw error;
+      }
+
+      setDecks(prev => [...prev, newDeck]);
+      return newDeck.id;
+    } catch (error) {
+      console.error('Error creating deck:', error);
+      throw error;
     }
   };
 
-  const duplicateDeck = (deckId: string): string => {
+  const updateDeck = async (deck: Deck): Promise<void> => {
+    if (!user) throw new Error('Authentication required');
+    
+    try {
+      const { error } = await supabase
+        .from(TABLES.USER_DECKS)
+        .update({
+          name: deck.name,
+          description: deck.description,
+          cards: deck.cards,
+          is_public: deck.isPublic || false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', deck.id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error updating deck:', error);
+        throw error;
+      }
+
+      setDecks(prev => prev.map(d => d.id === deck.id ? deck : d));
+      if (currentDeck?.id === deck.id) {
+        setCurrentDeck(deck);
+      }
+    } catch (error) {
+      console.error('Error updating deck:', error);
+      throw error;
+    }
+  };
+
+  const deleteDeck = async (deckId: string): Promise<void> => {
+    if (!user) throw new Error('Authentication required');
+    
+    try {
+      const { error } = await supabase
+        .from(TABLES.USER_DECKS)
+        .delete()
+        .eq('id', deckId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting deck:', error);
+        throw error;
+      }
+
+      setDecks(prev => prev.filter(d => d.id !== deckId));
+      if (currentDeck?.id === deckId) {
+        setCurrentDeck(null);
+      }
+    } catch (error) {
+      console.error('Error deleting deck:', error);
+      throw error;
+    }
+  };
+
+  const duplicateDeck = async (deckId: string): Promise<string> => {
+    const deckToDuplicate = decks.find(d => d.id === deckId);
+    if (!deckToDuplicate) throw new Error('Deck not found');
+    
+    const newName = `${deckToDuplicate.name} (Copy)`;
+    const newId = await createDeck(newName, deckToDuplicate.description);
+    
+    const newDeck = decks.find(d => d.id === newId);
+    if (newDeck) {
+      newDeck.cards = [...deckToDuplicate.cards];
+      await updateDeck(newDeck);
+    }
+    
+    return newId;
+  };
+
+  const publishDeck = async (deckId: string): Promise<void> => {
     const deck = decks.find(d => d.id === deckId);
-    if (!deck) return '';
+    if (!deck) throw new Error('Deck not found');
     
-    const newDeck: Deck = {
-      ...deck,
-      id: Date.now().toString(),
-      name: `${deck.name} (Copy)`,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    setDecks(prev => [...prev, newDeck]);
-    return newDeck.id;
+    deck.isPublic = true;
+    await updateDeck(deck);
   };
 
-  const updateDeck = (deck: Deck) => {
-    setDecks(prev => prev.map(d => d.id === deck.id ? deck : d));
-    if (currentDeck?.id === deck.id) {
-      setCurrentDeck(deck);
-    }
+  const unpublishDeck = async (deckId: string): Promise<void> => {
+    const deck = decks.find(d => d.id === deckId);
+    if (!deck) throw new Error('Deck not found');
+    
+    deck.isPublic = false;
+    await updateDeck(deck);
   };
 
   const addCardToDeck = (card: LorcanaCard, deckId?: string): boolean => {
@@ -132,170 +259,143 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
     if (!targetDeck) return false;
 
     const existingCard = targetDeck.cards.find(c => c.id === card.id);
-    const currentQuantity = existingCard?.quantity || 0;
     
-    if (currentQuantity >= 4) return false;
-    
-    const totalCards = targetDeck.cards.reduce((sum, c) => sum + c.quantity, 0);
-    if (totalCards >= 60) return false;
+    if (existingCard) {
+      if (existingCard.quantity >= 4) return false;
+      existingCard.quantity++;
+    } else {
+      targetDeck.cards.push({ ...card, quantity: 1 });
+    }
 
-    const updatedDeck: Deck = {
-      ...targetDeck,
-      cards: existingCard
-        ? targetDeck.cards.map(c =>
-            c.id === card.id ? { ...c, quantity: c.quantity + 1 } : c
-          )
-        : [...targetDeck.cards, { ...card, quantity: 1 }],
-      updatedAt: new Date()
-    };
-
-    updateDeck(updatedDeck);
+    targetDeck.updatedAt = new Date();
+    updateDeck(targetDeck);
     return true;
   };
 
-  const removeCardFromDeck = (cardId: number, deckId?: string) => {
+  const removeCardFromDeck = (cardId: number, deckId?: string): void => {
     const targetDeck = deckId ? decks.find(d => d.id === deckId) : currentDeck;
     if (!targetDeck) return;
 
-    const updatedDeck: Deck = {
-      ...targetDeck,
-      cards: targetDeck.cards
-        .map(c => c.id === cardId ? { ...c, quantity: c.quantity - 1 } : c)
-        .filter(c => c.quantity > 0),
-      updatedAt: new Date()
-    };
-
-    updateDeck(updatedDeck);
+    targetDeck.cards = targetDeck.cards.filter(c => c.id !== cardId);
+    targetDeck.updatedAt = new Date();
+    updateDeck(targetDeck);
   };
 
-  const updateCardQuantity = (cardId: number, quantity: number, deckId?: string) => {
+  const updateCardQuantity = (cardId: number, quantity: number, deckId?: string): void => {
     const targetDeck = deckId ? decks.find(d => d.id === deckId) : currentDeck;
     if (!targetDeck) return;
-    
-    if (quantity < 0 || quantity > 4) return;
 
-    const existingCard = targetDeck.cards.find(c => c.id === cardId);
-    
-    const updatedDeck: Deck = {
-      ...targetDeck,
-      cards: quantity === 0
-        ? targetDeck.cards.filter(c => c.id !== cardId)
-        : existingCard
-          ? targetDeck.cards.map(c => c.id === cardId ? { ...c, quantity } : c)
-          : targetDeck.cards,
-      updatedAt: new Date()
-    };
+    const card = targetDeck.cards.find(c => c.id === cardId);
+    if (!card) return;
 
-    updateDeck(updatedDeck);
+    if (quantity <= 0) {
+      removeCardFromDeck(cardId, deckId);
+    } else if (quantity <= 4) {
+      card.quantity = quantity;
+      targetDeck.updatedAt = new Date();
+      updateDeck(targetDeck);
+    }
   };
 
   const getDeckSummary = (deckId: string): DeckSummary | null => {
     const deck = decks.find(d => d.id === deckId);
     if (!deck) return null;
 
-    const cardCount = deck.cards.reduce((sum, c) => sum + c.quantity, 0);
     const inkDistribution: Record<string, number> = {};
-    
     deck.cards.forEach(card => {
-      const color = card.color || 'None';
-      
-      // Handle dual-ink cards by splitting them into individual colors
-      if (color.includes('-')) {
-        const colors = color.split('-');
-        colors.forEach(individualColor => {
-          inkDistribution[individualColor] = (inkDistribution[individualColor] || 0) + card.quantity;
-        });
-      } else {
-        inkDistribution[color] = (inkDistribution[color] || 0) + card.quantity;
+      if (!inkDistribution[card.color]) {
+        inkDistribution[card.color] = 0;
       }
+      inkDistribution[card.color] += card.quantity;
     });
 
-    const { isValid } = validateDeck(deck);
+    const validation = validateDeckUtil(deck);
 
     return {
       id: deck.id,
       name: deck.name,
       description: deck.description,
-      cardCount,
+      cardCount: deck.cards.reduce((sum, card) => sum + card.quantity, 0),
       inkDistribution,
-      isValid,
+      isValid: validation.isValid,
       createdAt: deck.createdAt,
       updatedAt: deck.updatedAt
     };
   };
 
   const validateDeck = (deck: Deck): { isValid: boolean; errors: string[] } => {
-    // Use the validation utility function as single source of truth
-    const validationResult = validateDeckUtil(deck);
-    return {
-      isValid: validationResult.isValid,
-      errors: validationResult.errors
-    };
+    return validateDeckUtil(deck);
   };
 
-  const clearCurrentDeck = () => {
-    if (currentDeck) {
-      const clearedDeck: Deck = {
-        ...currentDeck,
-        cards: [],
-        updatedAt: new Date()
-      };
-      updateDeck(clearedDeck);
-    }
+  const clearCurrentDeck = (): void => {
+    setCurrentDeck(null);
   };
 
   const exportDeck = (deckId: string): string => {
     const deck = decks.find(d => d.id === deckId);
     if (!deck) return '';
-    
-    const deckList = deck.cards
-      .map(card => `${card.quantity}x ${card.name}${card.version ? ` - ${card.version}` : ''}`)
-      .join('\n');
-    
-    return `Deck: ${deck.name}\n${deck.description ? `Description: ${deck.description}\n` : ''}\n${deckList}`;
+
+    const deckData = {
+      name: deck.name,
+      description: deck.description,
+      cards: deck.cards.map(card => ({
+        id: card.id,
+        name: card.name,
+        quantity: card.quantity
+      }))
+    };
+
+    return JSON.stringify(deckData, null, 2);
   };
 
-  const importDeck = (deckData: string): boolean => {
+  const importDeck = async (deckData: string): Promise<boolean> => {
     try {
-      const lines = deckData.trim().split('\n');
-      const nameLine = lines.find(l => l.startsWith('Deck:'));
-      const name = nameLine ? nameLine.replace('Deck:', '').trim() : 'Imported Deck';
+      const parsed = JSON.parse(deckData);
+      if (!parsed.name || !parsed.cards) return false;
+
+      const newId = await createDeck(parsed.name, parsed.description);
+      const newDeck = decks.find(d => d.id === newId);
       
-      const descLine = lines.find(l => l.startsWith('Description:'));
-      const description = descLine ? descLine.replace('Description:', '').trim() : undefined;
+      if (newDeck && parsed.cards) {
+        // Map imported cards to actual card data
+        newDeck.cards = parsed.cards;
+        await updateDeck(newDeck);
+      }
       
-      createDeck(name, description);
       return true;
     } catch (error) {
-      console.error('Failed to import deck:', error);
+      console.error('Error importing deck:', error);
       return false;
     }
   };
 
-  return (
-    <DeckContext.Provider value={{
-      decks,
-      currentDeck,
-      createDeck,
-      deleteDeck,
-      duplicateDeck,
-      updateDeck,
-      setCurrentDeck,
-      addCardToDeck,
-      removeCardFromDeck,
-      updateCardQuantity,
-      getDeckSummary,
-      validateDeck,
-      clearCurrentDeck,
-      exportDeck,
-      importDeck
-    }}>
-      {children}
-    </DeckContext.Provider>
-  );
+  const value: DeckContextType = {
+    decks,
+    publicDecks,
+    currentDeck,
+    loading,
+    createDeck,
+    deleteDeck,
+    duplicateDeck,
+    updateDeck,
+    setCurrentDeck,
+    addCardToDeck,
+    removeCardFromDeck,
+    updateCardQuantity,
+    getDeckSummary,
+    validateDeck,
+    clearCurrentDeck,
+    exportDeck,
+    importDeck,
+    publishDeck,
+    unpublishDeck,
+    loadPublicDecks
+  };
+
+  return <DeckContext.Provider value={value}>{children}</DeckContext.Provider>;
 };
 
-export const useDeck = () => {
+export const useDeck = (): DeckContextType => {
   const context = useContext(DeckContext);
   if (context === undefined) {
     throw new Error('useDeck must be used within a DeckProvider');

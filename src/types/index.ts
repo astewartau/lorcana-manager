@@ -65,6 +65,9 @@ export interface Deck {
   cards: DeckCard[];
   createdAt: Date;
   updatedAt: Date;
+  isPublic?: boolean;
+  userId?: string;
+  authorEmail?: string;
 }
 
 export interface DeckSummary {

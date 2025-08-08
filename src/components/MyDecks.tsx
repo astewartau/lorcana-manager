@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, Upload, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Upload, Search, Globe, Lock, Copy, Trash2, Edit, Eye } from 'lucide-react';
 import { useDeck } from '../contexts/DeckContext';
 import { useAuth } from '../contexts/AuthContext';
 import DeckBox3D from './DeckBox3D';
@@ -12,19 +12,99 @@ interface MyDecksProps {
 
 const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
   const { user } = useAuth();
-  const { decks, createDeck, deleteDeck, duplicateDeck, getDeckSummary, exportDeck, importDeck, setCurrentDeck } = useDeck();
+  const { 
+    decks, 
+    publicDecks, 
+    loading,
+    createDeck, 
+    deleteDeck, 
+    duplicateDeck, 
+    getDeckSummary, 
+    exportDeck, 
+    importDeck, 
+    setCurrentDeck,
+    publishDeck,
+    unpublishDeck,
+    loadPublicDecks
+  } = useDeck();
+  
+  const [activeTab, setActiveTab] = useState<'my' | 'public'>('my');
   const [showNewDeckForm, setShowNewDeckForm] = useState(false);
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckDescription, setNewDeckDescription] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  const handleCreateDeck = () => {
+  // Load public decks when tab changes or search changes
+  useEffect(() => {
+    if (activeTab === 'public') {
+      if (searchTimeout) clearTimeout(searchTimeout);
+      
+      const timeout = setTimeout(() => {
+        loadPublicDecks(searchTerm);
+      }, 500);
+      
+      setSearchTimeout(timeout);
+      
+      return () => {
+        if (timeout) clearTimeout(timeout);
+      };
+    }
+  }, [activeTab, searchTerm]);
+
+  const handleCreateDeck = async () => {
     if (!newDeckName.trim()) return;
     
-    const deckId = createDeck(newDeckName.trim(), newDeckDescription.trim() || undefined);
-    setNewDeckName('');
-    setNewDeckDescription('');
-    setShowNewDeckForm(false);
-    onBuildDeck(deckId);
+    try {
+      const deckId = await createDeck(newDeckName.trim(), newDeckDescription.trim() || undefined);
+      setNewDeckName('');
+      setNewDeckDescription('');
+      setShowNewDeckForm(false);
+      onBuildDeck(deckId);
+    } catch (error) {
+      console.error('Error creating deck:', error);
+      alert('Failed to create deck');
+    }
+  };
+
+  const handleDeleteDeck = async (deckId: string) => {
+    if (window.confirm('Are you sure you want to delete this deck?')) {
+      try {
+        await deleteDeck(deckId);
+      } catch (error) {
+        console.error('Error deleting deck:', error);
+        alert('Failed to delete deck');
+      }
+    }
+  };
+
+  const handleDuplicateDeck = async (deckId: string) => {
+    try {
+      await duplicateDeck(deckId);
+    } catch (error) {
+      console.error('Error duplicating deck:', error);
+      alert('Failed to duplicate deck');
+    }
+  };
+
+  const handlePublishDeck = async (deckId: string) => {
+    try {
+      await publishDeck(deckId);
+      alert('Deck published successfully!');
+    } catch (error) {
+      console.error('Error publishing deck:', error);
+      alert('Failed to publish deck');
+    }
+  };
+
+  const handleUnpublishDeck = async (deckId: string) => {
+    try {
+      await unpublishDeck(deckId);
+      alert('Deck unpublished successfully!');
+    } catch (error) {
+      console.error('Error unpublishing deck:', error);
+      alert('Failed to unpublish deck');
+    }
   };
 
   const handleExportDeck = (deckId: string) => {
@@ -32,30 +112,31 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
     const deck = decks.find(d => d.id === deckId);
     if (!deck) return;
     
-    const blob = new Blob([deckData], { type: 'text/plain' });
+    const blob = new Blob([deckData], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${deck.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
-    document.body.appendChild(a);
+    a.download = `${deck.name.replace(/[^a-z0-9]/gi, '_')}.json`;
     a.click();
-    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
   const handleImportDeck = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.txt';
+    input.accept = '.json';
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
       
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        if (importDeck(content)) {
-          // Handle successful import
+      reader.onload = async (event) => {
+        const content = event.target?.result as string;
+        const success = await importDeck(content);
+        if (success) {
+          alert('Deck imported successfully!');
+        } else {
+          alert('Failed to import deck. Please check the file format.');
         }
       };
       reader.readAsText(file);
@@ -69,7 +150,6 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
       <AuthRequired 
         feature="decks" 
         onSignIn={() => {
-          // Open login modal - need to pass this from App.tsx
           const signInButton = document.querySelector('[data-sign-in-button]') as HTMLButtonElement;
           if (signInButton) signInButton.click();
         }}
@@ -79,119 +159,311 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
 
   return (
     <div className="space-y-6">
+      {/* Header with Tabs */}
       <div className="card-lorcana p-6 art-deco-corner">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-lorcana-ink mb-2">My Decks</h2>
-            <p className="text-lorcana-navy">Build, manage, and organize your Lorcana decks</p>
+            <h2 className="text-2xl font-bold text-lorcana-ink mb-2">Deck Manager</h2>
+            <p className="text-lorcana-navy">Build, manage, and share your Lorcana decks</p>
           </div>
-          <div className="flex gap-2 mt-4 md:mt-0">
-            <button
-              onClick={handleImportDeck}
-              className="btn-lorcana-outline flex items-center space-x-2"
-            >
-              <Upload size={20} />
-              <span>Import</span>
-            </button>
-            <button
-              onClick={() => setShowNewDeckForm(true)}
-              className="btn-lorcana-navy flex items-center space-x-2 px-6 py-2"
-            >
-              <Plus size={20} />
-              <span>Build New Deck</span>
-            </button>
+          
+          <div className="mt-4 md:mt-0 flex gap-2">
+            {activeTab === 'my' && (
+              <>
+                <button
+                  onClick={() => setShowNewDeckForm(true)}
+                  className="btn-lorcana-gold flex items-center space-x-2"
+                >
+                  <Plus size={20} />
+                  <span>New Deck</span>
+                </button>
+                
+                <button
+                  onClick={handleImportDeck}
+                  className="btn-lorcana-navy-outline flex items-center space-x-2"
+                >
+                  <Upload size={20} />
+                  <span>Import</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
 
-        {showNewDeckForm && (
-          <div className="mb-6 p-4 bg-lorcana-cream border-2 border-lorcana-gold rounded-sm">
-            <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Deck name (required)"
-                value={newDeckName}
-                onChange={(e) => setNewDeckName(e.target.value)}
-                className="w-full px-3 py-2 border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-white"
-                onKeyPress={(e) => e.key === 'Enter' && handleCreateDeck()}
-              />
-              <textarea
-                placeholder="Deck description (optional)"
-                value={newDeckDescription}
-                onChange={(e) => setNewDeckDescription(e.target.value)}
-                className="w-full px-3 py-2 border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-white"
-                rows={2}
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={handleCreateDeck}
-                  disabled={!newDeckName.trim()}
-                  className="btn-lorcana px-4 py-2 disabled:bg-gray-400 disabled:text-gray-600"
-                >
-                  Create & Build
-                </button>
-                <button
-                  onClick={() => {
-                    setShowNewDeckForm(false);
-                    setNewDeckName('');
-                    setNewDeckDescription('');
-                  }}
-                  className="btn-lorcana-outline px-4 py-2"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-      </div>
-
-      {decks.length === 0 ? (
-        <div className="card-lorcana p-12 text-center art-deco-corner">
-          <FileText size={48} className="mx-auto text-lorcana-gold mb-4" />
-          <h3 className="text-xl font-semibold text-lorcana-ink mb-2">No decks yet</h3>
-          <p className="text-lorcana-navy mb-6">Start building your first Lorcana deck!</p>
+        {/* Tabs */}
+        <div className="flex border-b-2 border-lorcana-gold">
           <button
-            onClick={() => setShowNewDeckForm(true)}
-            className="btn-lorcana-navy px-6 py-3"
+            onClick={() => setActiveTab('my')}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'my'
+                ? 'bg-lorcana-gold text-lorcana-navy border-b-2 border-lorcana-navy -mb-0.5'
+                : 'text-lorcana-navy hover:bg-lorcana-cream'
+            }`}
           >
-            Build Your First Deck
+            My Decks ({decks.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('public')}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'public'
+                ? 'bg-lorcana-gold text-lorcana-navy border-b-2 border-lorcana-navy -mb-0.5'
+                : 'text-lorcana-navy hover:bg-lorcana-cream'
+            }`}
+          >
+            Published Decks
           </button>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 justify-items-center">
-          {decks.map((deck) => {
-            const summary = getDeckSummary(deck.id);
-            if (!summary) return null;
-            
-            return (
-              <div key={deck.id} className="group">
-                <DeckBox3D
-                  deck={deck}
-                  summary={summary}
-                  onView={(deckId) => {
-                    const targetDeck = decks.find(d => d.id === deckId);
-                    if (targetDeck) {
-                      setCurrentDeck(targetDeck);
-                    }
-                    onViewDeck(deckId);
-                  }}
-                  onEdit={(deckId) => {
-                    const targetDeck = decks.find(d => d.id === deckId);
-                    if (targetDeck) {
-                      setCurrentDeck(targetDeck);
-                    }
-                    onBuildDeck(deckId);
-                  }}
-                  onDuplicate={duplicateDeck}
-                  onDelete={deleteDeck}
-                  onExport={handleExportDeck}
-                />
-              </div>
-            );
-          })}
+      </div>
+
+      {/* Search Bar for Public Decks */}
+      {activeTab === 'public' && (
+        <div className="card-lorcana p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lorcana-navy" size={20} />
+            <input
+              type="text"
+              placeholder="Search published decks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-lorcana-cream"
+            />
+          </div>
         </div>
       )}
+
+      {/* New Deck Form */}
+      {showNewDeckForm && (
+        <div className="card-lorcana p-6">
+          <h3 className="text-lg font-bold text-lorcana-ink mb-4">Create New Deck</h3>
+          <div className="space-y-4">
+            <input
+              type="text"
+              placeholder="Deck Name"
+              value={newDeckName}
+              onChange={(e) => setNewDeckName(e.target.value)}
+              className="w-full px-4 py-2 border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold"
+            />
+            <textarea
+              placeholder="Description (optional)"
+              value={newDeckDescription}
+              onChange={(e) => setNewDeckDescription(e.target.value)}
+              className="w-full px-4 py-2 border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold"
+              rows={3}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleCreateDeck}
+                disabled={!newDeckName.trim()}
+                className="btn-lorcana-gold"
+              >
+                Create Deck
+              </button>
+              <button
+                onClick={() => {
+                  setShowNewDeckForm(false);
+                  setNewDeckName('');
+                  setNewDeckDescription('');
+                }}
+                className="btn-lorcana-navy-outline"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="text-center py-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-lorcana-gold"></div>
+          <p className="mt-2 text-lorcana-navy">Loading decks...</p>
+        </div>
+      )}
+
+      {/* Deck Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {activeTab === 'my' ? (
+          decks.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-lorcana-navy mb-4">You haven't created any decks yet.</p>
+              <button
+                onClick={() => setShowNewDeckForm(true)}
+                className="btn-lorcana-gold"
+              >
+                Create Your First Deck
+              </button>
+            </div>
+          ) : (
+            decks.map(deck => {
+              const summary = getDeckSummary(deck.id);
+              if (!summary) return null;
+              
+              return (
+                <div key={deck.id} className="card-lorcana p-6 relative group">
+                  <DeckBox3D 
+                    deck={deck} 
+                    summary={summary}
+                    onView={() => onViewDeck(deck.id)}
+                    onEdit={() => {
+                      setCurrentDeck(deck);
+                      onBuildDeck(deck.id);
+                    }}
+                    onDuplicate={() => handleDuplicateDeck(deck.id)}
+                    onDelete={() => handleDeleteDeck(deck.id)}
+                    onExport={() => handleExportDeck(deck.id)}
+                  />
+                  
+                  <div className="mt-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="text-lg font-bold text-lorcana-ink">{deck.name}</h3>
+                        {deck.isPublic && (
+                          <span className="inline-flex items-center gap-1 text-xs text-green-600 mt-1">
+                            <Globe size={12} />
+                            Published
+                          </span>
+                        )}
+                      </div>
+                      <span className={`px-2 py-1 text-xs rounded ${
+                        summary?.isValid 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {summary?.cardCount || 0}/60
+                      </span>
+                    </div>
+                    
+                    {deck.description && (
+                      <p className="text-sm text-lorcana-navy mb-3">{deck.description}</p>
+                    )}
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => {
+                          setCurrentDeck(deck);
+                          onBuildDeck(deck.id);
+                        }}
+                        className="btn-lorcana-gold-sm flex items-center gap-1"
+                      >
+                        <Edit size={14} />
+                        Edit
+                      </button>
+                      
+                      <button
+                        onClick={() => onViewDeck(deck.id)}
+                        className="btn-lorcana-navy-outline-sm flex items-center gap-1"
+                      >
+                        <Eye size={14} />
+                        View
+                      </button>
+                      
+                      {deck.isPublic ? (
+                        <button
+                          onClick={() => handleUnpublishDeck(deck.id)}
+                          className="btn-lorcana-navy-outline-sm flex items-center gap-1"
+                        >
+                          <Lock size={14} />
+                          Unpublish
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handlePublishDeck(deck.id)}
+                          className="btn-lorcana-gold-sm flex items-center gap-1"
+                        >
+                          <Globe size={14} />
+                          Publish
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => handleDuplicateDeck(deck.id)}
+                        className="btn-lorcana-navy-outline-sm flex items-center gap-1"
+                        title="Duplicate"
+                      >
+                        <Copy size={14} />
+                      </button>
+                      
+                      <button
+                        onClick={() => handleExportDeck(deck.id)}
+                        className="btn-lorcana-navy-outline-sm flex items-center gap-1"
+                        title="Export"
+                      >
+                        <Upload size={14} />
+                      </button>
+                      
+                      <button
+                        onClick={() => handleDeleteDeck(deck.id)}
+                        className="btn-lorcana-navy-outline-sm flex items-center gap-1 hover:bg-red-500 hover:text-white"
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )
+        ) : (
+          publicDecks.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-lorcana-navy">No published decks found.</p>
+            </div>
+          ) : (
+            publicDecks.map(deck => {
+              const cardCount = deck.cards.reduce((sum, c) => sum + c.quantity, 0);
+              return (
+                <div key={deck.id} className="card-lorcana p-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold text-lorcana-ink">{deck.name}</h3>
+                    <p className="text-xs text-lorcana-navy mt-1">
+                      by {deck.authorEmail || 'Unknown'}
+                    </p>
+                  </div>
+                  
+                  {deck.description && (
+                    <p className="text-sm text-lorcana-navy mb-3">{deck.description}</p>
+                  )}
+                  
+                  <div className="flex items-center justify-between mb-4">
+                    <span className={`px-2 py-1 text-xs rounded ${
+                      cardCount === 60 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {cardCount}/60 cards
+                    </span>
+                    <span className="text-xs text-lorcana-navy">
+                      Updated {new Date(deck.updatedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onViewDeck(deck.id)}
+                      className="btn-lorcana-gold-sm flex-1 flex items-center justify-center gap-1"
+                    >
+                      <Eye size={14} />
+                      View Deck
+                    </button>
+                    
+                    {user && deck.userId !== user.id && (
+                      <button
+                        onClick={() => handleDuplicateDeck(deck.id)}
+                        className="btn-lorcana-navy-outline-sm flex items-center gap-1"
+                        title="Copy to My Decks"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )
+        )}
+      </div>
     </div>
   );
 };
