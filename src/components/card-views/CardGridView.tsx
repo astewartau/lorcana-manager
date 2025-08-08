@@ -21,7 +21,7 @@ const CardGridView: React.FC<CardGridViewProps> = ({
   onCardClick
 }) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-8">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4 pb-8">
       {cards.map((consolidatedCard) => {
         const quantities = getVariantQuantities(consolidatedCard.fullName);
         return (

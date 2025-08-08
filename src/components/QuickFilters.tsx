@@ -17,7 +17,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
 }) => {
   const inkColors = ['Amber', 'Amethyst', 'Emerald', 'Ruby', 'Sapphire', 'Steel'];
   const inkCosts = [1, 2, 3, 4, 5, 6, 7];
-  const rarities = ['Common', 'Uncommon', 'Rare', 'Super Rare', 'Legendary', 'Enchanted'];
+  const rarities = ['Common', 'Uncommon', 'Rare', 'Super Rare', 'Legendary', 'Enchanted', 'Special'];
 
   const toggleColorFilter = (color: string) => {
     const newColors = filters.colors.includes(color)

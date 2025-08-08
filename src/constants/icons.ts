@@ -5,7 +5,8 @@ export const RARITY_ICONS: Record<string, string> = {
   'Super Rare': '/imgs/super_rare.svg',
   'Legendary': '/imgs/legendary.svg',
   'Enchanted': '/imgs/enchanted.png',
-  'Special': '/imgs/promo.webp'
+  'Special': '/imgs/promo.png',
+  'Promo': '/imgs/promo.png'
 };
 
 export const COLOR_ICONS: Record<string, string> = {

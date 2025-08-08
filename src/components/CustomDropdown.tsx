@@ -70,10 +70,9 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
 
       {isOpen && (
         <div className={`
-          dropdown-menu absolute z-50 w-full mt-1
+          dropdown-menu absolute z-[9999] w-full mt-1
           bg-white border-2 border-lorcana-gold rounded-sm shadow-xl
           ${compact ? 'text-xs' : 'text-sm'}
-          animate-in slide-in-from-top-2 duration-200
         `}>
           {options.map((option) => (
             <button
