@@ -9,7 +9,7 @@ interface DeckPanelProps {
   onRemoveCard: (cardId: number) => void;
   onUpdateQuantity: (cardId: number, quantity: number) => void;
   onClearDeck: () => void;
-  onViewDeck?: () => void;
+  onViewDeck?: (deckId?: string) => void;
   validation: { isValid: boolean; errors: string[] };
   isCollapsed?: boolean;
 }
@@ -656,7 +656,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
       {onViewDeck && deck && (
         <div className="border-t-2 border-lorcana-gold p-4 mt-auto flex-shrink-0">
           <button
-            onClick={onViewDeck}
+            onClick={() => onViewDeck?.(deck.id)}
             className="btn-lorcana-navy w-full justify-center space-x-2 font-medium"
           >
             <span>View Deck</span>

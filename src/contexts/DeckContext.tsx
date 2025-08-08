@@ -298,7 +298,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
   };
 
   const getDeckSummary = (deckId: string): DeckSummary | null => {
-    const deck = decks.find(d => d.id === deckId);
+    const deck = decks.find(d => d.id === deckId) || publicDecks.find(d => d.id === deckId);
     if (!deck) return null;
 
     const inkDistribution: Record<string, number> = {};

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { ArrowLeft, Search, Grid, List, Filter, Save, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { FilterOptions, SortOption, ConsolidatedCard } from '../types';
 import { consolidatedCards, sets } from '../data/allCards';
@@ -17,12 +18,23 @@ import { RARITY_ICONS, COLOR_ICONS } from '../constants/icons';
 
 interface DeckBuilderProps {
   onBack: () => void;
-  onViewDeck: () => void;
+  onViewDeck: (deckId?: string) => void;
 }
 
 const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
-  const { currentDeck, updateDeck, addCardToDeck, removeCardFromDeck, updateCardQuantity, validateDeck } = useDeck();
+  const { deckId } = useParams<{ deckId?: string }>();
+  const { currentDeck, decks, setCurrentDeck, updateDeck, addCardToDeck, removeCardFromDeck, updateCardQuantity, validateDeck } = useDeck();
   const { getVariantQuantities } = useCollection();
+  
+  // Load deck from URL parameter
+  useEffect(() => {
+    if (deckId) {
+      const deck = decks.find(d => d.id === deckId);
+      if (deck) {
+        setCurrentDeck(deck);
+      }
+    }
+  }, [deckId, decks, setCurrentDeck]);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');

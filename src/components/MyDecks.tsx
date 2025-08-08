@@ -3,7 +3,6 @@ import { Plus, Upload, Search, Globe, Lock, Copy, Trash2, Edit, Eye } from 'luci
 import { useDeck } from '../contexts/DeckContext';
 import { useAuth } from '../contexts/AuthContext';
 import DeckBox3D from './DeckBox3D';
-import AuthRequired from './AuthRequired';
 
 interface MyDecksProps {
   onBuildDeck: (deckId?: string) => void;
@@ -35,9 +34,9 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  // Load public decks when tab changes or search changes
+  // Load public decks when tab changes or search changes (authenticated users)
   useEffect(() => {
-    if (activeTab === 'public') {
+    if (user && activeTab === 'public') {
       if (searchTimeout) clearTimeout(searchTimeout);
       
       const timeout = setTimeout(() => {
@@ -50,7 +49,24 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
         if (timeout) clearTimeout(timeout);
       };
     }
-  }, [activeTab, searchTerm]);
+  }, [user, activeTab, searchTerm]);
+
+  // Load public decks when not authenticated (search term changes)
+  useEffect(() => {
+    if (!user) {
+      if (searchTimeout) clearTimeout(searchTimeout);
+      
+      const timeout = setTimeout(() => {
+        loadPublicDecks(searchTerm);
+      }, 500);
+      
+      setSearchTimeout(timeout);
+      
+      return () => {
+        if (timeout) clearTimeout(timeout);
+      };
+    }
+  }, [user, searchTerm]);
 
   const handleCreateDeck = async () => {
     if (!newDeckName.trim()) return;
@@ -144,16 +160,104 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
     input.click();
   };
 
-  // Show auth required if not signed in
+  // If not signed in, show only Published Decks tab
   if (!user) {
     return (
-      <AuthRequired 
-        feature="decks" 
-        onSignIn={() => {
-          const signInButton = document.querySelector('[data-sign-in-button]') as HTMLButtonElement;
-          if (signInButton) signInButton.click();
-        }}
-      />
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="card-lorcana p-6 art-deco-corner">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-lorcana-ink mb-2">Published Decks</h2>
+              <p className="text-lorcana-navy">Discover and browse community decks</p>
+              <p className="text-sm text-lorcana-navy mt-1">
+                <button
+                  onClick={() => {
+                    const signInButton = document.querySelector('[data-sign-in-button]') as HTMLButtonElement;
+                    if (signInButton) signInButton.click();
+                  }}
+                  className="text-lorcana-gold hover:underline"
+                >
+                  Sign in
+                </button>
+                {' '}to create and manage your own decks
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Bar for Public Decks */}
+        <div className="card-lorcana p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lorcana-navy" size={20} />
+            <input
+              type="text"
+              placeholder="Search published decks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-lorcana-cream"
+            />
+          </div>
+        </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-lorcana-gold"></div>
+            <p className="mt-2 text-lorcana-navy">Loading decks...</p>
+          </div>
+        )}
+
+        {/* Public Deck Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {publicDecks.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-lorcana-navy">No published decks found.</p>
+            </div>
+          ) : (
+            publicDecks.map(deck => {
+              const cardCount = deck.cards.reduce((sum, c) => sum + c.quantity, 0);
+              return (
+                <div key={deck.id} className="card-lorcana p-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold text-lorcana-ink">{deck.name}</h3>
+                    <p className="text-xs text-lorcana-navy mt-1">
+                      by {deck.authorEmail || 'Unknown'}
+                    </p>
+                  </div>
+                  
+                  {deck.description && (
+                    <p className="text-sm text-lorcana-navy mb-3">{deck.description}</p>
+                  )}
+                  
+                  <div className="flex items-center justify-between mb-4">
+                    <span className={`px-2 py-1 text-xs rounded ${
+                      cardCount === 60 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {cardCount}/60 cards
+                    </span>
+                    <span className="text-xs text-lorcana-navy">
+                      Updated {new Date(deck.updatedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onViewDeck(deck.id)}
+                      className="btn-lorcana-gold-sm flex-1 flex items-center justify-center gap-1"
+                    >
+                      <Eye size={14} />
+                      View Deck
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
     );
   }
 

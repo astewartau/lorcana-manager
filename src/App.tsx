@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, Package, Layers3, User, LogOut } from 'lucide-react';
 import CardBrowser from './components/CardBrowser';
 import Collection from './components/Collection';
@@ -10,20 +11,29 @@ import { CollectionProvider } from './contexts/CollectionContext';
 import { DeckProvider } from './contexts/DeckContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-type Tab = 'browse' | 'collection' | 'decks' | 'deck-builder' | 'deck-summary';
-
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<Tab>('browse');
+  const location = useLocation();
+  const navigate = useNavigate();
   const [navVisible, setNavVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, signOut, loading } = useAuth();
 
   const tabs = [
-    { id: 'browse' as Tab, label: 'Cards', icon: BookOpen },
-    { id: 'collection' as Tab, label: 'Collection', icon: Package },
-    { id: 'decks' as Tab, label: 'Decks', icon: Layers3 },
-  ].filter(tab => !['deck-builder', 'deck-summary'].includes(tab.id));
+    { id: '/cards', label: 'Cards', icon: BookOpen },
+    { id: '/collection', label: 'Collection', icon: Package },
+    { id: '/decks', label: 'Decks', icon: Layers3 },
+  ];
+
+  const isActivePath = (path: string) => {
+    if (path === '/cards') {
+      return location.pathname === '/' || location.pathname === '/cards';
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  const isDeckPage = location.pathname.includes('/deck/') || location.pathname.includes('/decks/build');
+  const shouldHideNavigation = isDeckPage;
 
   useEffect(() => {
     const controlNavbar = () => {
@@ -52,31 +62,6 @@ function AppContent() {
     };
   }, [lastScrollY]);
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'browse':
-        return <CardBrowser />;
-      case 'collection':
-        return <Collection />;
-      case 'decks':
-        return <MyDecks 
-          onBuildDeck={() => setActiveTab('deck-builder')} 
-          onViewDeck={() => setActiveTab('deck-summary')} 
-        />;
-      case 'deck-builder':
-        return <DeckBuilder 
-          onBack={() => setActiveTab('decks')} 
-          onViewDeck={() => setActiveTab('deck-summary')}
-        />;
-      case 'deck-summary':
-        return <DeckSummary 
-          onBack={() => setActiveTab('decks')} 
-          onEditDeck={() => setActiveTab('deck-builder')} 
-        />;
-      default:
-        return <CardBrowser />;
-    }
-  };
 
   return (
     <CollectionProvider>
@@ -161,7 +146,7 @@ function AppContent() {
               </header>
 
               {/* Desktop Navigation - always visible */}
-              {!['deck-builder', 'deck-summary'].includes(activeTab) && (
+              {!shouldHideNavigation && (
                 <nav className="px-6 pb-3">
                   <div className="flex justify-center">
                     <div className="bg-lorcana-purple/50 backdrop-blur border border-lorcana-gold/50 rounded-sm p-1">
@@ -169,18 +154,18 @@ function AppContent() {
                         {tabs.map((tab) => {
                           const Icon = tab.icon;
                           return (
-                            <button
+                            <Link
                               key={tab.id}
-                              onClick={() => setActiveTab(tab.id)}
+                              to={tab.id}
                               className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-sm transition-all duration-200 ${
-                                activeTab === tab.id
+                                isActivePath(tab.id)
                                   ? 'bg-lorcana-gold text-lorcana-navy shadow-md'
                                   : 'text-lorcana-cream hover:bg-lorcana-purple hover:text-lorcana-gold'
                               }`}
                             >
                               <Icon size={20} />
                               <span className="font-medium">{tab.label}</span>
-                            </button>
+                            </Link>
                           );
                         })}
                       </div>
@@ -191,7 +176,7 @@ function AppContent() {
             </div>
 
             {/* Mobile Navigation - sticky and scroll-responsive */}
-            {!['deck-builder', 'deck-summary'].includes(activeTab) && (
+            {!shouldHideNavigation && (
               <nav className={`
                 sm:hidden fixed bottom-0 left-0 right-0 z-50 
                 bg-lorcana-navy/95 backdrop-blur border-t-2 border-lorcana-gold
@@ -203,18 +188,18 @@ function AppContent() {
                     {tabs.map((tab) => {
                       const Icon = tab.icon;
                       return (
-                        <button
+                        <Link
                           key={tab.id}
-                          onClick={() => setActiveTab(tab.id)}
+                          to={tab.id}
                           className={`flex flex-col items-center justify-center px-3 py-2 rounded-sm transition-all duration-200 flex-1 ${
-                            activeTab === tab.id
+                            isActivePath(tab.id)
                               ? 'bg-lorcana-gold text-lorcana-navy shadow-md'
                               : 'text-lorcana-cream hover:bg-lorcana-purple hover:text-lorcana-gold'
                           }`}
                         >
                           <Icon size={18} />
                           <span className="text-xs font-medium mt-1 leading-none">{tab.label}</span>
-                        </button>
+                        </Link>
                       );
                     })}
                   </div>
@@ -222,7 +207,17 @@ function AppContent() {
               </nav>
             )}
 
-            <main className="pb-20 sm:pb-0">{renderContent()}</main>
+            <main className="pb-20 sm:pb-0">
+              <Routes>
+                <Route path="/" element={<CardBrowser />} />
+                <Route path="/cards" element={<CardBrowser />} />
+                <Route path="/collection" element={<Collection />} />
+                <Route path="/decks" element={<MyDecks onBuildDeck={(deckId?: string) => navigate(deckId ? `/decks/build/${deckId}` : '/decks/build')} onViewDeck={(deckId: string) => navigate(`/deck/${deckId}`)} />} />
+                <Route path="/decks/build" element={<DeckBuilder onBack={() => navigate('/decks')} onViewDeck={(deckId?: string) => deckId && navigate(`/deck/${deckId}`)} />} />
+                <Route path="/decks/build/:deckId" element={<DeckBuilder onBack={() => navigate('/decks')} onViewDeck={(deckId?: string) => deckId && navigate(`/deck/${deckId}`)} />} />
+                <Route path="/deck/:deckId" element={<DeckSummary onBack={() => navigate('/decks')} onEditDeck={(deckId?: string) => deckId && navigate(`/decks/build/${deckId}`)} />} />
+              </Routes>
+            </main>
           </div>
         </div>
         
@@ -239,7 +234,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <Router>
+        <AppContent />
+      </Router>
     </AuthProvider>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FilterOptions, SortOption, ConsolidatedCard } from '../types';
 import { consolidatedCards } from '../data/allCards';
 import { useCollection } from '../contexts/CollectionContext';
@@ -8,13 +9,50 @@ import { getDefaultFilters } from '../utils/filterDefaults';
 
 export const useCardBrowser = () => {
   const { getVariantQuantities, addVariantToCollection, removeVariantFromCollection } = useCollection();
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  // State management
-  const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [sortBy, setSortBy] = useState<SortOption>({ field: 'set', direction: 'desc' });
-  const [groupBy, setGroupBy] = useState<string>('none');
-  const [filters, setFilters] = useState<FilterOptions>(getDefaultFilters());
+  // Initialize state from URL parameters
+  const [searchTerm, setSearchTermState] = useState(() => searchParams.get('search') || '');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => (searchParams.get('view') as 'grid' | 'list') || 'grid');
+  const [sortBy, setSortByState] = useState<SortOption>(() => {
+    const field = (searchParams.get('sortField') as SortOption['field']) || 'set';
+    const direction = (searchParams.get('sortDirection') as 'asc' | 'desc') || 'desc';
+    return { field, direction };
+  });
+  const [groupBy, setGroupByState] = useState<string>(() => searchParams.get('groupBy') || 'none');
+  const [filters, setFiltersState] = useState<FilterOptions>(() => {
+    const defaultFilters = getDefaultFilters();
+    // Parse filters from URL params
+    const urlFilters = { ...defaultFilters };
+    
+    // Parse specific filter parameters
+    const sets = searchParams.getAll('set');
+    if (sets.length > 0) urlFilters.sets = sets;
+    
+    const colors = searchParams.getAll('color');
+    if (colors.length > 0) urlFilters.colors = colors;
+    
+    const rarities = searchParams.getAll('rarity');
+    if (rarities.length > 0) urlFilters.rarities = rarities;
+    
+    const types = searchParams.getAll('type');
+    if (types.length > 0) urlFilters.types = types;
+    
+    const collectionFilter = searchParams.get('collection');
+    if (collectionFilter) urlFilters.collectionFilter = collectionFilter as any;
+    
+    const inkable = searchParams.get('inkable');
+    if (inkable === 'true') urlFilters.inkwellOnly = true;
+    if (inkable === 'false') urlFilters.inkwellOnly = false;
+    
+    const minCost = searchParams.get('minCost');
+    if (minCost) urlFilters.costMin = parseInt(minCost);
+    
+    const maxCost = searchParams.get('maxCost');
+    if (maxCost) urlFilters.costMax = parseInt(maxCost);
+    
+    return urlFilters;
+  });
   const [showFilters, setShowFilters] = useState(false);
   
   // Stale card state for handling cards that no longer match filters
@@ -57,6 +95,64 @@ export const useCardBrowser = () => {
     setShowFilterNotification(false);
     setStaleCardCount(0);
   }, [filters, searchTerm, sortBy, groupBy]);
+
+  // Functions to update state and URL params
+  const setSearchTerm = (term: string) => {
+    setSearchTermState(term);
+    updateURLParams({ search: term || undefined });
+  };
+
+  const setSortBy = (sort: SortOption) => {
+    setSortByState(sort);
+    updateURLParams({ 
+      sortField: sort.field, 
+      sortDirection: sort.direction 
+    });
+  };
+
+  const setGroupBy = (group: string) => {
+    setGroupByState(group);
+    updateURLParams({ groupBy: group === 'none' ? undefined : group });
+  };
+
+  const setFilters = (newFilters: FilterOptions) => {
+    setFiltersState(newFilters);
+    const defaultFilters = getDefaultFilters();
+    
+    const params: Record<string, string | string[] | undefined> = {
+      set: newFilters.sets.length > 0 && JSON.stringify(newFilters.sets) !== JSON.stringify(defaultFilters.sets) ? newFilters.sets : undefined,
+      color: newFilters.colors.length > 0 && JSON.stringify(newFilters.colors) !== JSON.stringify(defaultFilters.colors) ? newFilters.colors : undefined,
+      rarity: newFilters.rarities.length > 0 && JSON.stringify(newFilters.rarities) !== JSON.stringify(defaultFilters.rarities) ? newFilters.rarities : undefined,
+      type: newFilters.types.length > 0 && JSON.stringify(newFilters.types) !== JSON.stringify(defaultFilters.types) ? newFilters.types : undefined,
+      collection: newFilters.collectionFilter !== defaultFilters.collectionFilter ? newFilters.collectionFilter : undefined,
+      inkable: newFilters.inkwellOnly !== defaultFilters.inkwellOnly ? String(newFilters.inkwellOnly) : undefined,
+      minCost: newFilters.costMin !== defaultFilters.costMin ? String(newFilters.costMin) : undefined,
+      maxCost: newFilters.costMax !== defaultFilters.costMax ? String(newFilters.costMax) : undefined,
+    };
+    
+    updateURLParams(params);
+  };
+
+  const updateURLParams = (params: Record<string, string | string[] | undefined>) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      
+      Object.entries(params).forEach(([key, value]) => {
+        // Remove existing parameters with this key
+        newParams.delete(key);
+        
+        if (value !== undefined) {
+          if (Array.isArray(value)) {
+            value.forEach(v => newParams.append(key, v));
+          } else {
+            newParams.set(key, value);
+          }
+        }
+      });
+      
+      return newParams;
+    });
+  };
 
   // Event handlers
   const clearAllFilters = () => {

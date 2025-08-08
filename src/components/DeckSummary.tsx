@@ -1,15 +1,36 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { ArrowLeft, Edit3 } from 'lucide-react';
 import { useDeck } from '../contexts/DeckContext';
+import { useAuth } from '../contexts/AuthContext';
 import { COLOR_ICONS } from '../constants/icons';
 
 interface DeckSummaryProps {
   onBack: () => void;
-  onEditDeck: () => void;
+  onEditDeck: (deckId?: string) => void;
 }
 
 const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
-  const { currentDeck, getDeckSummary } = useDeck();
+  const { deckId } = useParams<{ deckId: string }>();
+  const { user } = useAuth();
+  const { currentDeck, decks, publicDecks, setCurrentDeck, getDeckSummary, loadPublicDecks } = useDeck();
+  
+  // Load public decks if not authenticated
+  useEffect(() => {
+    if (!user && deckId) {
+      loadPublicDecks();
+    }
+  }, [user, deckId, loadPublicDecks]);
+
+  // Load deck from URL parameter (check both user decks and public decks)
+  useEffect(() => {
+    if (deckId) {
+      const deck = decks.find(d => d.id === deckId) || publicDecks.find(d => d.id === deckId);
+      if (deck) {
+        setCurrentDeck(deck);
+      }
+    }
+  }, [deckId, decks, publicDecks, setCurrentDeck]);
 
   if (!currentDeck) {
     return (
@@ -20,7 +41,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
             onClick={onBack}
             className="btn-lorcana-navy"
           >
-            Back to My Decks
+            Back to {user ? 'My Decks' : 'Published Decks'}
           </button>
         </div>
       </div>
@@ -37,7 +58,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
             onClick={onBack}
             className="btn-lorcana-navy"
           >
-            Back to My Decks
+            Back to {user ? 'My Decks' : 'Published Decks'}
           </button>
         </div>
       </div>
@@ -82,15 +103,17 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
               className="flex items-center space-x-2 text-lorcana-navy hover:text-lorcana-ink transition-colors"
             >
               <ArrowLeft size={20} />
-              <span>Back to My Decks</span>
+              <span>Back to {user ? 'My Decks' : 'Published Decks'}</span>
             </button>
-            <button
-              onClick={onEditDeck}
+            {user && currentDeck.userId === user.id && (
+              <button
+                onClick={() => onEditDeck(currentDeck.id)}
               className="btn-lorcana-navy flex items-center space-x-2"
             >
-              <Edit3 size={16} />
-              <span>Edit Deck</span>
-            </button>
+                <Edit3 size={16} />
+                <span>Edit Deck</span>
+              </button>
+            )}
           </div>
 
           <div className="card-lorcana p-6 art-deco-corner">
@@ -156,12 +179,14 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
           <div className="card-lorcana p-12 text-center art-deco-corner">
             <h3 className="text-xl font-semibold text-lorcana-ink mb-2">Empty Deck</h3>
             <p className="text-lorcana-navy mb-6">This deck doesn't have any cards yet.</p>
-            <button
-              onClick={onEditDeck}
-              className="btn-lorcana-navy px-6 py-3"
-            >
-              Start Building
-            </button>
+            {user && currentDeck.userId === user.id && (
+              <button
+                onClick={() => onEditDeck(currentDeck.id)}
+                className="btn-lorcana-navy px-6 py-3"
+              >
+                Start Building
+              </button>
+            )}
           </div>
         ) : (
           <div className="card-lorcana p-6 art-deco-corner">
