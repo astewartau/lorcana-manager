@@ -59,8 +59,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               }}
               className={`flex-1 p-1 rounded-sm transition-all hover:scale-110 flex items-center justify-center ${
                 filters.colors.includes(color)
-                  ? 'bg-lorcana-gold shadow-lg'
-                  : 'bg-transparent hover:bg-lorcana-cream'
+                  ? 'bg-lorcana-purple-light shadow-lg'
+                  : 'bg-transparent hover:bg-lorcana-purple/70 hover:shadow-md'
               }`}
               title={color}
             >
@@ -86,8 +86,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               }}
               className={`flex-1 p-1 rounded-sm transition-all hover:scale-110 flex items-center justify-center ${
                 filters.rarities.includes(rarity)
-                  ? 'bg-lorcana-gold shadow-lg'
-                  : 'bg-transparent hover:bg-lorcana-cream'
+                  ? 'bg-lorcana-purple-light shadow-lg'
+                  : 'bg-transparent hover:bg-lorcana-purple/70 hover:shadow-md'
               }`}
               title={rarity}
             >
@@ -134,8 +134,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
                 }}
                 className={`flex-1 p-1 rounded-sm transition-all hover:scale-110 flex items-center justify-center relative ${
                   isSelected
-                    ? 'bg-lorcana-gold shadow-lg'
-                    : 'bg-transparent hover:bg-lorcana-cream'
+                    ? 'bg-lorcana-purple-light shadow-lg'
+                    : 'bg-transparent hover:bg-lorcana-purple/70 hover:shadow-md'
                 }`}
                 title={`Cost ${cost}${cost === 7 ? '+' : ''}`}
               >
@@ -161,8 +161,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             }}
             className={`flex-1 p-1 rounded-sm transition-all hover:scale-110 flex items-center justify-center ${
               filters.inkwellOnly === true
-                ? 'bg-lorcana-gold shadow-lg'
-                : 'bg-transparent hover:bg-lorcana-cream'
+                ? 'bg-lorcana-purple-light shadow-lg'
+                : 'bg-transparent hover:bg-lorcana-purple/70 hover:shadow-md'
             }`}
             title="Inkable"
           >
@@ -179,8 +179,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             }}
             className={`flex-1 p-1 rounded-sm transition-all hover:scale-110 flex items-center justify-center ${
               filters.inkwellOnly === false
-                ? 'bg-lorcana-gold shadow-lg'
-                : 'bg-transparent hover:bg-lorcana-cream'
+                ? 'bg-lorcana-purple-light shadow-lg'
+                : 'bg-transparent hover:bg-lorcana-purple/70 hover:shadow-md'
             }`}
             title="Uninkable"
           >

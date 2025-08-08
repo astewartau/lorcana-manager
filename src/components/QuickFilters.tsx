@@ -91,8 +91,8 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
               onClick={() => toggleColorFilter(color)}
               className={`p-1 rounded-sm transition-all hover:scale-110 ${
                 filters.colors.includes(color)
-                  ? 'bg-lorcana-gold shadow-lg'
-                  : 'bg-transparent hover:bg-lorcana-purple'
+                  ? 'bg-lorcana-purple-light shadow-lg'
+                  : 'bg-transparent hover:bg-lorcana-purple/70 hover:shadow-md'
               }`}
               title={color}
             >
@@ -121,8 +121,8 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
                 onClick={() => toggleCostFilter(cost)}
                 className={`relative p-1 rounded-sm transition-all hover:scale-110 ${
                   isSelected
-                    ? 'bg-lorcana-gold shadow-lg'
-                    : 'bg-transparent hover:bg-lorcana-purple'
+                    ? 'bg-lorcana-purple-light shadow-lg'
+                    : 'bg-transparent hover:bg-lorcana-purple/70 hover:shadow-md'
                 }`}
                 title={`Cost ${cost}${cost === 7 ? '+' : ''}`}
               >
@@ -148,8 +148,8 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
             onClick={() => toggleInkwellFilter(true)}
             className={`p-1 rounded-sm transition-all hover:scale-110 ${
               filters.inkwellOnly === true
-                ? 'bg-lorcana-gold shadow-lg'
-                : 'bg-transparent hover:bg-lorcana-purple'
+                ? 'bg-lorcana-purple-light shadow-lg'
+                : 'bg-transparent hover:bg-lorcana-purple/70 hover:shadow-md'
             }`}
             title="Inkable"
           >
@@ -163,8 +163,8 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
             onClick={() => toggleInkwellFilter(false)}
             className={`p-1 rounded-sm transition-all hover:scale-110 ${
               filters.inkwellOnly === false
-                ? 'bg-lorcana-gold shadow-lg'
-                : 'bg-transparent hover:bg-lorcana-purple'
+                ? 'bg-lorcana-purple-light shadow-lg'
+                : 'bg-transparent hover:bg-lorcana-purple/70 hover:shadow-md'
             }`}
             title="Uninkable"
           >
@@ -187,8 +187,8 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
               onClick={() => toggleRarityFilter(rarity)}
               className={`p-1 rounded-sm transition-all hover:scale-110 ${
                 filters.rarities.includes(rarity)
-                  ? 'bg-lorcana-gold shadow-lg'
-                  : 'bg-transparent hover:bg-lorcana-purple'
+                  ? 'bg-lorcana-purple-light shadow-lg'
+                  : 'bg-transparent hover:bg-lorcana-purple/70 hover:shadow-md'
               }`}
               title={rarity}
             >
@@ -209,7 +209,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
           value={filters.collectionFilter}
           onChange={(value) => setFilters({...filters, collectionFilter: value as 'all' | 'owned' | 'not-owned'})}
           options={[
-            { value: 'all', label: 'All cards' },
+            { value: 'all', label: 'Ignore collection' },
             { value: 'owned', label: 'In collection' },
             { value: 'not-owned', label: 'Not in collection' }
           ]}

@@ -62,23 +62,23 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="card-lorcana p-6 art-deco-corner">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">My Decks</h2>
-            <p className="text-gray-600">Build, manage, and organize your Lorcana decks</p>
+            <h2 className="text-2xl font-bold text-lorcana-ink mb-2">My Decks</h2>
+            <p className="text-lorcana-navy">Build, manage, and organize your Lorcana decks</p>
           </div>
           <div className="flex gap-2 mt-4 md:mt-0">
             <button
               onClick={handleImportDeck}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
+              className="btn-lorcana-outline flex items-center space-x-2"
             >
               <Upload size={20} />
               <span>Import</span>
             </button>
             <button
               onClick={() => setShowNewDeckForm(true)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              className="btn-lorcana-navy flex items-center space-x-2 px-6 py-2"
             >
               <Plus size={20} />
               <span>Build New Deck</span>
@@ -87,28 +87,28 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
         </div>
 
         {showNewDeckForm && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="mb-6 p-4 bg-lorcana-cream border-2 border-lorcana-gold rounded-sm">
             <div className="space-y-3">
               <input
                 type="text"
                 placeholder="Deck name (required)"
                 value={newDeckName}
                 onChange={(e) => setNewDeckName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-white"
                 onKeyPress={(e) => e.key === 'Enter' && handleCreateDeck()}
               />
               <textarea
                 placeholder="Deck description (optional)"
                 value={newDeckDescription}
                 onChange={(e) => setNewDeckDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-white"
                 rows={2}
               />
               <div className="flex gap-2">
                 <button
                   onClick={handleCreateDeck}
                   disabled={!newDeckName.trim()}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400"
+                  className="btn-lorcana px-4 py-2 disabled:bg-gray-400 disabled:text-gray-600"
                 >
                   Create & Build
                 </button>
@@ -118,7 +118,7 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
                     setNewDeckName('');
                     setNewDeckDescription('');
                   }}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  className="btn-lorcana-outline px-4 py-2"
                 >
                   Cancel
                 </button>
@@ -130,13 +130,13 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
       </div>
 
       {decks.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <FileText size={48} className="mx-auto text-gray-400 mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No decks yet</h3>
-          <p className="text-gray-600 mb-6">Start building your first Lorcana deck!</p>
+        <div className="card-lorcana p-12 text-center art-deco-corner">
+          <FileText size={48} className="mx-auto text-lorcana-gold mb-4" />
+          <h3 className="text-xl font-semibold text-lorcana-ink mb-2">No decks yet</h3>
+          <p className="text-lorcana-navy mb-6">Start building your first Lorcana deck!</p>
           <button
             onClick={() => setShowNewDeckForm(true)}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="btn-lorcana-navy px-6 py-3"
           >
             Build Your First Deck
           </button>

@@ -64,7 +64,7 @@ const CollectionFilter: React.FC<CollectionFilterProps> = ({
                 value={collectionFilter}
                 onChange={(value) => onChange(value as 'all' | 'owned' | 'not-owned', cardCountOperator, cardCountValue)}
                 options={[
-                  { value: 'all', label: 'All cards' },
+                  { value: 'all', label: 'Ignore collection' },
                   { value: 'owned', label: 'In collection' },
                   { value: 'not-owned', label: 'Not in collection' }
                 ]}

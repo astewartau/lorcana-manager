@@ -131,21 +131,6 @@ const DeckBuilderCardList: React.FC<DeckBuilderCardListProps> = ({
               </div>
             </div>
 
-            {/* Variant Indicators */}
-            {(consolidatedCard.hasEnchanted || consolidatedCard.hasSpecial) && (
-              <div className="flex space-x-2 mt-2">
-                {consolidatedCard.hasEnchanted && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                    Enchanted Available
-                  </span>
-                )}
-                {consolidatedCard.hasSpecial && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                    Special Available
-                  </span>
-                )}
-              </div>
-            )}
           </div>
         );
       })}

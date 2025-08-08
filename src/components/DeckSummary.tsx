@@ -15,10 +15,10 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">No deck selected</h2>
+          <h2 className="text-xl font-semibold text-lorcana-ink mb-2">No deck selected</h2>
           <button
             onClick={onBack}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="btn-lorcana-navy"
           >
             Back to My Decks
           </button>
@@ -32,10 +32,10 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Deck not found</h2>
+          <h2 className="text-xl font-semibold text-lorcana-ink mb-2">Deck not found</h2>
           <button
             onClick={onBack}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="btn-lorcana-navy"
           >
             Back to My Decks
           </button>
@@ -74,39 +74,39 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
   const baseInkColors = inkColors.filter(([color]) => !color.includes('-'));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="min-h-screen bg-lorcana-cream">
       <div className="container mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={onBack}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center space-x-2 text-lorcana-navy hover:text-lorcana-ink transition-colors"
             >
               <ArrowLeft size={20} />
               <span>Back to My Decks</span>
             </button>
             <button
               onClick={onEditDeck}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="btn-lorcana-navy flex items-center space-x-2"
             >
               <Edit3 size={16} />
               <span>Edit Deck</span>
             </button>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="card-lorcana p-6 art-deco-corner">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{currentDeck.name}</h1>
+                <h1 className="text-3xl font-bold text-lorcana-ink mb-2">{currentDeck.name}</h1>
                 {currentDeck.description && (
-                  <p className="text-gray-600 mb-4">{currentDeck.description}</p>
+                  <p className="text-lorcana-navy mb-4">{currentDeck.description}</p>
                 )}
                 
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                <div className="flex flex-wrap items-center gap-4 text-sm text-lorcana-purple">
                   <div className="flex items-center space-x-1">
                     <span className="font-medium">Cards:</span>
-                    <span className={`font-semibold ${totalCards === 60 ? 'text-green-600' : totalCards > 60 ? 'text-red-600' : 'text-blue-600'}`}>
+                    <span className={`font-semibold ${totalCards === 60 ? 'text-green-600' : totalCards > 60 ? 'text-red-600' : 'text-lorcana-navy'}`}>
                       {totalCards}/60
                     </span>
                   </div>
@@ -143,7 +143,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
                           className="w-full h-full drop-shadow-lg"
                         />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-gray-400 border-2 border-white shadow-lg" />
+                        <div className="w-8 h-8 rounded-full bg-lorcana-gold border-2 border-white shadow-lg" />
                       )}
                     </div>
                   ))}
@@ -155,19 +155,19 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
 
         {/* Cards Grid */}
         {uniqueCards.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Empty Deck</h3>
-            <p className="text-gray-600 mb-6">This deck doesn't have any cards yet.</p>
+          <div className="card-lorcana p-12 text-center art-deco-corner">
+            <h3 className="text-xl font-semibold text-lorcana-ink mb-2">Empty Deck</h3>
+            <p className="text-lorcana-navy mb-6">This deck doesn't have any cards yet.</p>
             <button
               onClick={onEditDeck}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="btn-lorcana-navy px-6 py-3"
             >
               Start Building
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Deck Contents</h2>
+          <div className="card-lorcana p-6 art-deco-corner">
+            <h2 className="text-xl font-semibold text-lorcana-ink mb-4">Deck Contents</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2">
               {uniqueCards.map((card) => {
                 // Calculate exact space needed for vertical-only stacking
@@ -197,7 +197,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
                           key={index}
                           src={card.images.full}
                           alt={card.fullName}
-                          className="absolute top-0 left-0 w-full h-auto rounded-lg shadow-md"
+                          className="absolute top-0 left-0 w-full h-auto rounded-sm shadow-md border-2 border-lorcana-gold"
                           style={{
                             transform: `translateY(${index * -12}px)`, // Vertical-only offset, increased to 12px
                             zIndex: card.quantity - index,
@@ -208,7 +208,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
                       ))}
                       
                       {/* Quantity badge at bottom-right */}
-                      <div className="absolute bottom-2 right-2 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg z-50">
+                      <div className="absolute bottom-2 right-2 w-8 h-8 bg-lorcana-navy text-lorcana-gold rounded-sm flex items-center justify-center text-sm font-bold shadow-lg z-50 border-2 border-lorcana-gold">
                         {card.quantity}
                       </div>
                     </div>

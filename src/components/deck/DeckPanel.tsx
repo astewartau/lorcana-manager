@@ -185,7 +185,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
       
       return (
         <div className="flex flex-col items-center">
-          <div className="text-xs font-medium text-gray-700 mb-1">{title}</div>
+          <div className="text-xs font-medium text-lorcana-navy mb-1">{title}</div>
           <svg width="50" height="50" viewBox="0 0 50 50" className="cursor-pointer">
             <circle
               cx={centerX}
@@ -263,7 +263,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
 
     return (
       <div className="flex flex-col items-center">
-        <div className="text-xs font-medium text-gray-700 mb-1">{title}</div>
+        <div className="text-xs font-medium text-lorcana-navy mb-1">{title}</div>
         <svg width="50" height="50" viewBox="0 0 50 50" className="cursor-pointer">
           {segments.map(segment => (
             <path
@@ -315,14 +315,14 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
         </div>
       )}
 
-      <div className="w-full bg-white shadow-lg border-l border-gray-200 flex flex-col h-screen overflow-hidden">
+      <div className="w-full bg-white shadow-xl border-l-2 border-lorcana-gold flex flex-col h-screen overflow-hidden">
         {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex-shrink-0">
+      <div className="p-4 border-b-2 border-lorcana-gold flex-shrink-0">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-semibold text-gray-900">Deck Contents</h3>
+          <h3 className="text-lg font-semibold text-lorcana-ink">Deck Contents</h3>
           <button
             onClick={onClearDeck}
-            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+            className="p-2 text-red-600 hover:bg-red-100 rounded-sm transition-colors"
             title="Clear deck"
           >
             <Trash2 size={16} />
@@ -332,16 +332,16 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
         {/* Card Count */}
         <div className="mb-3">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-lorcana-navy">
               Cards: {totalCards}/60
             </span>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-lorcana-purple">
               Avg: {averageCost}
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-lorcana-cream border-2 border-lorcana-gold rounded-sm h-2">
             <div
-              className={`h-2 rounded-full transition-all ${
+              className={`h-2 rounded-sm transition-all ${
                 totalCards === 60 ? 'bg-green-500' : totalCards > 60 ? 'bg-red-500' : 'bg-blue-500'
               }`}
               style={{ width: `${Math.min((totalCards / 60) * 100, 100)}%` }}
@@ -351,7 +351,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
 
         {/* Validation Status */}
         {!validation.isValid && validation.errors.length > 0 && (
-          <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-3 p-2 bg-red-50 border-2 border-red-300 rounded-sm">
             <ul className="text-xs text-red-600 space-y-1">
               {validation.errors.map((error, index) => (
                 <li key={index}>• {error}</li>
@@ -362,13 +362,13 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200 flex-shrink-0">
+      <div className="flex border-b-2 border-lorcana-gold flex-shrink-0">
         <button
           onClick={() => setActiveTab('statistics')}
           className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
             activeTab === 'statistics'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+              ? 'text-lorcana-navy border-b-2 border-lorcana-navy bg-lorcana-cream'
+              : 'text-lorcana-purple hover:text-lorcana-navy'
           }`}
         >
           Statistics
@@ -377,8 +377,8 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
           onClick={() => setActiveTab('cards')}
           className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
             activeTab === 'cards'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+              ? 'text-lorcana-navy border-b-2 border-lorcana-navy bg-lorcana-cream'
+              : 'text-lorcana-purple hover:text-lorcana-navy'
           }`}
         >
           Cards
@@ -438,7 +438,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
 
         {/* Cost Distribution */}
         <div className="mb-6">
-          <div className="text-xs font-medium text-gray-700 mb-2">Cost Curve</div>
+          <div className="text-xs font-medium text-lorcana-navy mb-2">Cost Curve</div>
           <div className="flex items-end space-x-1 h-24">
             {Array.from({ length: 8 }, (_, i) => i).map(cost => {
               const actualCost = cost === 7 ? '7+' : cost.toString();
@@ -482,7 +482,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
               
               return (
                 <div key={cost} className="flex-1 flex flex-col items-center">
-                  <div className="text-xs text-gray-700 font-medium mb-1 h-4">
+                  <div className="text-xs text-lorcana-navy font-medium mb-1 h-4">
                     {totalCount > 0 ? totalCount : ''}
                   </div>
                   <div className="w-full relative" style={{ height: `${totalBarHeight}px` }}>
@@ -514,7 +514,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
                       />
                     )}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">{actualCost}</div>
+                  <div className="text-xs text-lorcana-purple mt-1">{actualCost}</div>
                 </div>
               );
             })}
@@ -527,11 +527,11 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
         {activeTab === 'cards' && (
           <div className="flex flex-col h-full">
             {/* Group By Selector */}
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b-2 border-lorcana-gold">
               <select
                 value={groupBy}
                 onChange={(e) => setGroupBy(e.target.value as 'cost' | 'type' | 'color')}
-                className="w-full text-sm border border-gray-300 rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                className="w-full text-sm border-2 border-lorcana-gold rounded-sm px-3 py-2 focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-lorcana-cream"
               >
                 <option value="cost">Group by Cost</option>
                 <option value="type">Group by Type</option>
@@ -542,7 +542,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
             {/* Cards List */}
             <div className="flex-1 overflow-y-auto px-4 pb-4">
             {deck.cards.length === 0 ? (
-              <div className="p-4 text-center text-gray-500 text-sm">
+              <div className="p-4 text-center text-lorcana-purple text-sm">
                 No cards in deck. Start adding cards to build your deck!
               </div>
             ) : (
@@ -555,7 +555,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
                   <div key={groupName}>
                     <button
                       onClick={() => toggleGroup(groupName)}
-                      className="w-full flex items-center justify-between p-2 hover:bg-gray-50 transition-colors"
+                      className="w-full flex items-center justify-between p-2 hover:bg-lorcana-cream transition-colors"
                     >
                       <div className="flex items-center space-x-2">
                         {isCollapsed ? (
@@ -563,11 +563,11 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
                         ) : (
                           <ChevronDown size={12} />
                         )}
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-lorcana-navy">
                           {groupName}
                         </span>
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-lorcana-purple">
                         {groupTotal} cards
                       </span>
                     </button>
@@ -577,13 +577,13 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
                         {cards
                           .sort((a, b) => a.name.localeCompare(b.name))
                           .map((card) => (
-                            <div key={card.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded">
+                            <div key={card.id} className="flex items-center space-x-2 p-2 hover:bg-lorcana-cream rounded-sm">
                               {/* Card Thumbnail */}
                               <div className="w-8 h-10 flex-shrink-0">
                                 <img
                                   src={card.images.thumbnail}
                                   alt={card.fullName}
-                                  className="w-full h-full object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                                  className="w-full h-full object-cover rounded-sm cursor-pointer hover:opacity-80 transition-opacity"
                                   onMouseEnter={(e) => {
                                     const rect = e.currentTarget.getBoundingClientRect();
                                     setImagePreview({
@@ -599,16 +599,16 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
                               
                               {/* Card Info */}
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-gray-900 truncate">
+                                <div className="text-sm font-medium text-lorcana-ink truncate">
                                   {card.name}
                                 </div>
                                 {card.version && (
-                                  <div className="text-xs text-gray-500 truncate">
+                                  <div className="text-xs text-lorcana-purple truncate">
                                     {card.version}
                                   </div>
                                 )}
                                 <div className="flex items-center space-x-2 mt-1">
-                                  <span className="text-xs font-bold text-blue-600">{card.cost}</span>
+                                  <span className="text-xs font-bold text-lorcana-navy bg-lorcana-gold px-1 rounded-sm">{card.cost}</span>
                                   {card.color && COLOR_ICONS[card.color] && (
                                     <img 
                                       src={COLOR_ICONS[card.color]} 
@@ -616,7 +616,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
                                       className="w-3 h-3"
                                     />
                                   )}
-                                  <span className="text-xs text-gray-500">{card.type}</span>
+                                  <span className="text-xs text-lorcana-purple">{card.type}</span>
                                 </div>
                               </div>
                               
@@ -624,7 +624,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
                               <div className="flex items-center space-x-1 ml-2">
                                 <button
                                   onClick={() => onRemoveCard(card.id)}
-                                  className="w-6 h-6 flex items-center justify-center text-red-600 hover:text-red-800 transition-colors"
+                                  className="w-6 h-6 flex items-center justify-center text-red-600 hover:text-red-800 hover:bg-red-100 rounded-sm transition-colors"
                                 >
                                   <Minus size={12} />
                                 </button>
@@ -634,7 +634,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
                                 <button
                                   onClick={() => onUpdateQuantity(card.id, card.quantity + 1)}
                                   disabled={card.quantity >= 4 || totalCards >= 60}
-                                  className="w-6 h-6 flex items-center justify-center text-green-600 hover:text-green-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                                  className="w-6 h-6 flex items-center justify-center text-green-600 hover:text-green-800 hover:bg-green-100 disabled:text-gray-400 disabled:cursor-not-allowed rounded-sm transition-colors"
                                 >
                                   <Plus size={12} />
                                 </button>
@@ -655,10 +655,10 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
 
       {/* View Deck Button - Fixed at bottom */}
       {onViewDeck && deck && (
-        <div className="border-t border-gray-200 p-4 mt-auto flex-shrink-0">
+        <div className="border-t-2 border-lorcana-gold p-4 mt-auto flex-shrink-0">
           <button
             onClick={onViewDeck}
-            className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center space-x-2 font-medium"
+            className="btn-lorcana-navy w-full justify-center space-x-2 font-medium"
           >
             <span>View Deck</span>
           </button>

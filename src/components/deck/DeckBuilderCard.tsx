@@ -19,7 +19,7 @@ const DeckBuilderCard: React.FC<DeckBuilderCardProps> = ({
   onRemoveCard,
   canAdd
 }) => {
-  const { baseCard, hasEnchanted, hasSpecial } = consolidatedCard;
+  const { baseCard } = consolidatedCard;
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [transform, setTransform] = useState('');
@@ -62,7 +62,7 @@ const DeckBuilderCard: React.FC<DeckBuilderCardProps> = ({
       {/* Card Image with tilt effect */}
       <div 
         ref={cardRef}
-        className="relative rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 ease-out aspect-[2.5/3.5] overflow-hidden cursor-pointer transform-gpu select-none"
+        className="relative rounded-sm shadow-md hover:shadow-2xl transition-all duration-300 ease-out aspect-[2.5/3.5] overflow-hidden cursor-pointer transform-gpu select-none border-2 border-lorcana-gold"
         style={{
           transform: transform,
           transformOrigin: 'center center',
@@ -90,24 +90,11 @@ const DeckBuilderCard: React.FC<DeckBuilderCardProps> = ({
           />
         )}
         
-        {/* Variant indicators */}
-        <div className="absolute top-2 right-2 flex flex-col space-y-1">
-          {hasEnchanted && (
-            <div className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-              E
-            </div>
-          )}
-          {hasSpecial && (
-            <div className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-              S
-            </div>
-          )}
-        </div>
 
         {/* Max copies indicator */}
         {deckQuantity >= 4 && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <span className="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">
+            <span className="bg-red-600 text-white px-2 py-1 rounded-sm text-xs font-bold border border-white">
               MAX
             </span>
           </div>
@@ -115,23 +102,23 @@ const DeckBuilderCard: React.FC<DeckBuilderCardProps> = ({
       </div>
 
       {/* Deck Controls - Below Card */}
-      <div className="flex items-center justify-between px-2 py-1 bg-gray-50 rounded-md border border-gray-200">
+      <div className="flex items-center justify-between px-2 py-1 bg-lorcana-cream rounded-sm border-2 border-lorcana-gold">
         <button
           onClick={() => onRemoveCard(baseCard.id)}
           disabled={deckQuantity <= 0}
-          className="w-6 h-6 flex items-center justify-center text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors rounded"
+          className="w-6 h-6 flex items-center justify-center text-red-600 hover:text-red-800 hover:bg-red-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors rounded-sm"
         >
           <Minus size={12} />
         </button>
         
-        <span className="text-sm font-semibold text-gray-800">
+        <span className="text-sm font-semibold text-lorcana-ink">
           {deckQuantity}{collectionQuantity > 0 ? `/${Math.min(collectionQuantity, 4)}` : ''}
         </span>
         
         <button
           onClick={() => onAddCard(consolidatedCard)}
           disabled={!canAdd}
-          className="w-6 h-6 flex items-center justify-center text-green-600 hover:text-green-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors rounded"
+          className="w-6 h-6 flex items-center justify-center text-green-600 hover:text-green-800 hover:bg-green-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors rounded-sm"
         >
           <Plus size={12} />
         </button>

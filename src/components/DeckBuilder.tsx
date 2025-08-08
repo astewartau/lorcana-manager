@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ArrowLeft, Search, Grid, List, Filter, Save, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Search, Grid, List, Filter, Save, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { FilterOptions, SortOption, ConsolidatedCard } from '../types';
 import { consolidatedCards, sets } from '../data/allCards';
 import { useDeck } from '../contexts/DeckContext';
@@ -145,31 +145,31 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
   const validation = validateDeck(currentDeck);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="min-h-screen bg-lorcana-cream">
       <div className="max-w-full">
         {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+        <div className="bg-white shadow-lg border-b-2 border-lorcana-gold px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
                 onClick={onBack}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center space-x-2 text-lorcana-navy hover:text-lorcana-ink transition-colors"
               >
                 <ArrowLeft size={20} />
                 <span>Back to My Decks</span>
               </button>
-              <div className="h-6 w-px bg-gray-300" />
+              <div className="h-6 w-px bg-lorcana-gold" />
               <input
                 type="text"
                 value={deckName}
                 onChange={(e) => setDeckName(e.target.value)}
                 onBlur={handleUpdateName}
                 onKeyPress={(e) => e.key === 'Enter' && handleUpdateName()}
-                className="text-xl font-bold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0"
+                className="text-xl font-bold text-lorcana-ink bg-transparent border-none focus:outline-none focus:ring-0 p-0"
                 placeholder="Deck Name"
               />
-              <div className={`px-2 py-1 rounded text-sm font-medium ${
-                validation.isValid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              <div className={`px-2 py-1 rounded-sm text-sm font-medium border-2 ${
+                validation.isValid ? 'bg-lorcana-cream text-lorcana-navy border-lorcana-gold' : 'bg-red-100 text-red-800 border-red-300'
               }`}>
                 {validation.isValid ? 'Valid' : 'Invalid'}
               </div>
@@ -177,7 +177,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                className="btn-lorcana-navy flex items-center space-x-2"
               >
                 <Save size={16} />
                 <span>Save</span>
@@ -187,19 +187,19 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
         </div>
 
         {/* Main Content */}
-        <div className="flex relative">
-          {/* Cards Panel */}
-          <div className={`transition-all duration-300 ease-in-out p-6 ${sidebarCollapsed ? 'pr-20' : 'pr-6'}`} style={{ width: sidebarCollapsed ? 'calc(100% - 60px)' : 'calc(100% - 320px)' }}>
-            <div className="bg-white rounded-t-lg shadow-md p-6">
+        <div className="relative">
+          {/* Cards Panel - Full width, no interaction with sidebar */}
+          <div className="p-6">
+            <div className="card-lorcana p-6">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lorcana-navy" size={20} />
                   <input
                     type="text"
                     placeholder="Search cards by name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-lorcana-cream"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -209,7 +209,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
                       const [field, direction] = e.target.value.split('-');
                       setSortBy({ field: field as any, direction: direction as 'asc' | 'desc' });
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-4 py-2 border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-white hover:bg-lorcana-cream transition-colors"
                   >
                     <option value="name-asc">Name A-Z</option>
                     <option value="name-desc">Name Z-A</option>
@@ -221,13 +221,13 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
 
                   <button
                       onClick={() => setShowFilters(!showFilters)}
-                    className={`px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center space-x-2 ${
-                      activeFiltersCount > 0 ? 'bg-blue-50 border-blue-300' : ''
+                    className={`px-4 py-2 border-2 rounded-sm focus:ring-2 focus:ring-lorcana-gold flex items-center space-x-2 transition-colors ${
+                      activeFiltersCount > 0 ? 'bg-lorcana-gold border-lorcana-navy text-lorcana-ink' : 'border-lorcana-gold hover:bg-lorcana-cream'
                     }`}
                   >
                     <Filter size={20} />
                     {activeFiltersCount > 0 && (
-                      <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                      <span className="bg-lorcana-navy text-lorcana-gold text-xs font-bold px-2 py-1 rounded-sm">
                         {activeFiltersCount}
                       </span>
                     )}
@@ -235,7 +235,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
                   
                   <button
                     onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-4 py-2 border-2 border-lorcana-gold rounded-sm hover:bg-lorcana-cream focus:ring-2 focus:ring-lorcana-gold transition-colors"
                   >
                     {viewMode === 'grid' ? <List size={20} /> : <Grid size={20} />}
                   </button>
@@ -251,18 +251,6 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
               rarityIconMap={RARITY_ICONS}
             />
 
-            {showFilters && (
-              <FilterPanel
-                filters={filters}
-                setFilters={setFilters}
-                activeFiltersCount={activeFiltersCount}
-                onClearAllFilters={clearAllFilters}
-                onClose={() => setShowFilters(false)}
-                rarityIconMap={RARITY_ICONS}
-                colorIconMap={COLOR_ICONS}
-                showCollectionFilters={true}
-              />
-            )}
 
             {/* Top Pagination Info */}
             <PaginationControls
@@ -317,29 +305,98 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
             />
           </div>
 
-          {/* Deck Panel - Sticky Sidebar */}
-          <div className={`fixed top-0 right-0 h-screen transition-all duration-300 ease-in-out z-40 ${sidebarCollapsed ? 'w-16' : 'w-80'}`}>
-            {/* Collapse/Expand Button */}
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-50 w-8 h-12 bg-white border border-gray-300 rounded-l-lg shadow-md hover:bg-gray-50 transition-colors flex items-center justify-center"
-            >
-              {sidebarCollapsed ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-            </button>
-            
-            {/* Sidebar Content */}
-            <div className={`h-full transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-              <DeckPanel
-                deck={currentDeck}
-                onRemoveCard={handleRemoveCard}
-                onUpdateQuantity={updateCardQuantity}
-                onClearDeck={clearDeck}
-                onViewDeck={onViewDeck}
-                validation={validation}
-                isCollapsed={sidebarCollapsed}
+          {/* Deck Panel - True Overlay */}
+          <>
+            {/* Backdrop when expanded - only on mobile/tablet */}
+            {!sidebarCollapsed && (
+              <div 
+                className="fixed inset-0 bg-black bg-opacity-30 z-30 lg:hidden"
+                onClick={() => setSidebarCollapsed(true)}
               />
+            )}
+            
+            {/* Deck Sidebar */}
+            <div className={`fixed top-0 right-0 h-screen transition-all duration-300 ease-in-out z-40 ${sidebarCollapsed ? 'w-16' : 'w-80'}`}>
+              {/* Collapse/Expand Button */}
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-50 w-8 h-12 bg-white border-2 border-lorcana-gold rounded-l-sm shadow-xl hover:bg-lorcana-cream transition-colors flex items-center justify-center"
+              >
+                {sidebarCollapsed ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+              </button>
+              
+              {/* Sidebar Content */}
+              <div className={`h-full transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                <DeckPanel
+                  deck={currentDeck}
+                  onRemoveCard={handleRemoveCard}
+                  onUpdateQuantity={updateCardQuantity}
+                  onClearDeck={clearDeck}
+                  onViewDeck={onViewDeck}
+                  validation={validation}
+                  isCollapsed={sidebarCollapsed}
+                />
+              </div>
             </div>
-          </div>
+          </>
+
+          {/* Filters Sidebar Overlay */}
+          {showFilters && (
+            <>
+              {/* Backdrop - lighter on desktop */}
+              <div 
+                className="fixed inset-0 bg-black bg-opacity-50 lg:bg-opacity-20 z-40"
+                onClick={() => setShowFilters(false)}
+              />
+              
+              {/* Sidebar - True overlay for both mobile and desktop */}
+              <div className={`
+                fixed top-0 left-0 z-50
+                w-80 sm:w-96 lg:w-80 xl:w-96
+                h-screen
+                bg-white border-r-2 border-lorcana-gold shadow-2xl
+                overflow-y-auto
+                transform transition-transform duration-300
+                ${showFilters ? 'translate-x-0' : '-translate-x-full'}
+              `}>
+                <div className="sticky top-0 bg-white border-b-2 border-lorcana-gold p-4 lg:p-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-lorcana-ink">Filters</h3>
+                    <div className="flex items-center space-x-2">
+                      {activeFiltersCount > 0 && (
+                        <button
+                          onClick={clearAllFilters}
+                          className="flex items-center space-x-1 px-3 py-1 text-sm text-lorcana-ink hover:text-lorcana-navy border-2 border-lorcana-gold rounded-sm hover:bg-lorcana-cream transition-colors"
+                        >
+                          <RotateCcw size={14} />
+                          <span>Clear All</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowFilters(false)}
+                        className="text-lorcana-navy hover:text-lorcana-ink transition-colors text-xl font-bold"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 lg:p-6">
+                  <FilterPanel
+                    filters={filters}
+                    setFilters={setFilters}
+                    activeFiltersCount={activeFiltersCount}
+                    onClearAllFilters={clearAllFilters}
+                    onClose={() => setShowFilters(false)}
+                    rarityIconMap={RARITY_ICONS}
+                    colorIconMap={COLOR_ICONS}
+                    showCollectionFilters={true}
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
         </div>
       </div>
