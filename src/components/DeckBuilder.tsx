@@ -26,7 +26,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ onBack, onViewDeck }) => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [sortBy, setSortBy] = useState<SortOption>({ field: 'name', direction: 'asc' });
+  const [sortBy, setSortBy] = useState<SortOption>({ field: 'set', direction: 'desc' });
   const [showFilters, setShowFilters] = useState(false);
   const [deckName, setDeckName] = useState(currentDeck?.name || '');
 

@@ -29,14 +29,14 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   showCollectionFilters = true
 }) => {
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div className="bg-white border-2 border-lorcana-gold rounded-sm shadow-lg p-6 mb-6 art-deco-corner">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+        <h3 className="text-lg font-semibold text-lorcana-ink">Filters</h3>
         <div className="flex items-center space-x-2">
           {activeFiltersCount > 0 && (
             <button
               onClick={onClearAllFilters}
-              className="flex items-center space-x-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center space-x-1 px-3 py-1 text-sm text-lorcana-ink hover:text-lorcana-navy border-2 border-lorcana-gold rounded-sm hover:bg-lorcana-cream transition-colors"
             >
               <RotateCcw size={14} />
               <span>Clear All</span>
@@ -44,7 +44,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           )}
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-lorcana-navy hover:text-lorcana-ink transition-colors"
           >
             ×
           </button>
@@ -61,30 +61,30 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           iconMap={rarityIconMap}
         />
         
-        <div>
-          <MultiSelectFilter
-            title="Ink Color"
-            options={colors.map(color => color === '' ? 'None' : color)}
-            selectedValues={filters.colors.map(color => color === '' ? 'None' : color)}
-            onChange={(values) => {
-              const actualColors = (values as string[]).map(value => value === 'None' ? '' : value);
-              setFilters({...filters, colors: actualColors});
-            }}
-            defaultCollapsed={true}
-            iconMap={colorIconMap}
-          />
-          <div className="mt-2 px-2">
-            <label className="flex items-center space-x-2 text-sm">
-              <input
-                type="checkbox"
-                checked={filters.showAnyWithColors}
-                onChange={(e) => setFilters({...filters, showAnyWithColors: e.target.checked})}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-gray-700">Show any with colours</span>
-            </label>
-          </div>
-        </div>
+        <MultiSelectFilter
+          title="Ink Color"
+          options={colors.filter(color => color !== '')}
+          selectedValues={filters.colors.filter(color => color !== '')}
+          onChange={(values) => {
+            setFilters({...filters, colors: values as string[]});
+          }}
+          defaultCollapsed={true}
+          iconMap={colorIconMap}
+          customHeaderContent={
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-lorcana-ink">Color Match Mode</label>
+              <select
+                value={filters.colorMatchMode}
+                onChange={(e) => setFilters({...filters, colorMatchMode: e.target.value as 'any' | 'only' | 'dual-only'})}
+                className="w-full text-sm px-2 py-1 border-2 border-lorcana-gold rounded-sm focus:ring-1 focus:ring-lorcana-gold focus:border-lorcana-navy bg-white"
+              >
+                <option value="any">Match any with colours</option>
+                <option value="only">Show only chosen colours</option>
+                <option value="dual-only">Show only chosen dual-inks</option>
+              </select>
+            </div>
+          }
+        />
         
         <MultiSelectFilter
           title="Type"
@@ -173,11 +173,11 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         
         {showCollectionFilters && (
           <CollectionFilter
-            inMyCollection={filters.inMyCollection}
+            collectionFilter={filters.collectionFilter}
             cardCountOperator={filters.cardCountOperator}
             cardCountValue={filters.cardCountValue}
-            onChange={(inMyCollection, cardCountOperator, cardCountValue) => 
-              setFilters({...filters, inMyCollection, cardCountOperator, cardCountValue})
+            onChange={(collectionFilter, cardCountOperator, cardCountValue) => 
+              setFilters({...filters, collectionFilter, cardCountOperator, cardCountValue})
             }
             defaultCollapsed={true}
           />
@@ -197,6 +197,23 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           }
           defaultCollapsed={true}
         />
+
+        <div className="border-2 border-lorcana-gold rounded-sm bg-white shadow-sm">
+          <div className="flex justify-between items-center p-3">
+            <h3 className="font-medium text-lorcana-ink">Illumineer's Quest</h3>
+          </div>
+          <div className="border-t border-lorcana-gold p-3">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.includeIllumineerQuest}
+                onChange={(e) => setFilters({...filters, includeIllumineerQuest: e.target.checked})}
+                className="rounded border-lorcana-gold text-lorcana-navy focus:ring-lorcana-gold"
+              />
+              <span className="text-sm text-lorcana-ink">Include Illumineer's Quest cards</span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ export const getDefaultFilters = (): FilterOptions => {
     search: '',
     sets: [],
     colors: [],
-    showAnyWithColors: true,
+    colorMatchMode: 'any',
     rarities: [],
     types: [],
     stories: [],
@@ -23,7 +23,8 @@ export const getDefaultFilters = (): FilterOptions => {
     inkwellOnly: null,
     hasEnchanted: null,
     hasSpecial: null,
-    inMyCollection: null,
+    includeIllumineerQuest: false,
+    collectionFilter: 'all',
     cardCountOperator: null,
     cardCountValue: 1,
   };

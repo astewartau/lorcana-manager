@@ -1,5 +1,6 @@
 import React from 'react';
 import { FilterOptions } from '../types';
+import CustomDropdown from './CustomDropdown';
 
 interface QuickFiltersProps {
   filters: FilterOptions;
@@ -55,10 +56,6 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
     setFilters({ ...filters, rarities: newRarities });
   };
 
-  const toggleMyCollectionFilter = () => {
-    const newInMyCollection = filters.inMyCollection === true ? null : true;
-    setFilters({ ...filters, inMyCollection: newInMyCollection });
-  };
 
   const toggleInkwellFilter = (inkwellOnly: boolean) => {
     const newInkwellOnly = filters.inkwellOnly === inkwellOnly ? null : inkwellOnly;
@@ -66,21 +63,25 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
   };
 
   return (
-    <div className="bg-gray-800 rounded-b-lg shadow-md p-2 mb-6">
+    <div className="bg-lorcana-navy border-2 border-lorcana-gold border-t-0 rounded-b-sm shadow-xl p-3 mb-6 relative">
+      {/* Subtle inner glow for connection */}
+      <div className="absolute inset-0 bg-gradient-to-b from-lorcana-gold/10 via-transparent to-transparent rounded-b-sm pointer-events-none"></div>
+      <div className="relative z-10">
       <div className="flex flex-wrap items-center gap-2">
-        {/* Show any with colours checkbox */}
-        <label className="flex items-center space-x-1 text-sm">
-          <input
-            type="checkbox"
-            checked={filters.showAnyWithColors}
-            onChange={(e) => setFilters({...filters, showAnyWithColors: e.target.checked})}
-            className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
-          />
-          <span className="text-gray-300">Show any with colours</span>
-        </label>
+        {/* Color match mode dropdown */}
+        <CustomDropdown
+          value={filters.colorMatchMode}
+          onChange={(value) => setFilters({...filters, colorMatchMode: value as 'any' | 'only' | 'dual-only'})}
+          options={[
+            { value: 'any', label: 'Match any' },
+            { value: 'only', label: 'Only chosen' },
+            { value: 'dual-only', label: 'Dual-inks only' }
+          ]}
+          compact={true}
+        />
 
         {/* Divider */}
-        <div className="h-8 w-px bg-gray-600"></div>
+        <div className="h-8 w-px bg-lorcana-gold"></div>
 
         {/* Ink Colors */}
         <div className="flex gap-1">
@@ -88,10 +89,10 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
             <button
               key={color}
               onClick={() => toggleColorFilter(color)}
-              className={`p-1 rounded transition-all hover:scale-110 ${
+              className={`p-1 rounded-sm transition-all hover:scale-110 ${
                 filters.colors.includes(color)
-                  ? 'bg-blue-500 shadow-lg'
-                  : 'bg-transparent hover:bg-gray-700'
+                  ? 'bg-lorcana-gold shadow-lg'
+                  : 'bg-transparent hover:bg-lorcana-purple'
               }`}
               title={color}
             >
@@ -105,7 +106,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
         </div>
 
         {/* Divider */}
-        <div className="h-8 w-px bg-gray-600"></div>
+        <div className="h-8 w-px bg-lorcana-gold"></div>
 
         {/* Ink Costs */}
         <div className="flex gap-1">
@@ -118,10 +119,10 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
               <button
                 key={cost}
                 onClick={() => toggleCostFilter(cost)}
-                className={`relative p-1 rounded transition-all hover:scale-110 ${
+                className={`relative p-1 rounded-sm transition-all hover:scale-110 ${
                   isSelected
-                    ? 'bg-blue-500 shadow-lg'
-                    : 'bg-transparent hover:bg-gray-700'
+                    ? 'bg-lorcana-gold shadow-lg'
+                    : 'bg-transparent hover:bg-lorcana-purple'
                 }`}
                 title={`Cost ${cost}${cost === 7 ? '+' : ''}`}
               >
@@ -139,16 +140,16 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
         </div>
 
         {/* Divider */}
-        <div className="h-8 w-px bg-gray-600"></div>
+        <div className="h-8 w-px bg-lorcana-gold"></div>
 
         {/* Inkwell */}
         <div className="flex gap-1">
           <button
             onClick={() => toggleInkwellFilter(true)}
-            className={`p-1 rounded transition-all hover:scale-110 ${
+            className={`p-1 rounded-sm transition-all hover:scale-110 ${
               filters.inkwellOnly === true
-                ? 'bg-blue-500 shadow-lg'
-                : 'bg-transparent hover:bg-gray-700'
+                ? 'bg-lorcana-gold shadow-lg'
+                : 'bg-transparent hover:bg-lorcana-purple'
             }`}
             title="Inkable"
           >
@@ -160,10 +161,10 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
           </button>
           <button
             onClick={() => toggleInkwellFilter(false)}
-            className={`p-1 rounded transition-all hover:scale-110 ${
+            className={`p-1 rounded-sm transition-all hover:scale-110 ${
               filters.inkwellOnly === false
-                ? 'bg-blue-500 shadow-lg'
-                : 'bg-transparent hover:bg-gray-700'
+                ? 'bg-lorcana-gold shadow-lg'
+                : 'bg-transparent hover:bg-lorcana-purple'
             }`}
             title="Uninkable"
           >
@@ -176,7 +177,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
         </div>
 
         {/* Divider */}
-        <div className="h-8 w-px bg-gray-600"></div>
+        <div className="h-8 w-px bg-lorcana-gold"></div>
 
         {/* Rarities */}
         <div className="flex gap-1">
@@ -184,10 +185,10 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
             <button
               key={rarity}
               onClick={() => toggleRarityFilter(rarity)}
-              className={`p-1 rounded transition-all hover:scale-110 ${
+              className={`p-1 rounded-sm transition-all hover:scale-110 ${
                 filters.rarities.includes(rarity)
-                  ? 'bg-blue-500 shadow-lg'
-                  : 'bg-transparent hover:bg-gray-700'
+                  ? 'bg-lorcana-gold shadow-lg'
+                  : 'bg-transparent hover:bg-lorcana-purple'
               }`}
               title={rarity}
             >
@@ -201,18 +202,20 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({
         </div>
 
         {/* Divider */}
-        <div className="h-8 w-px bg-gray-600"></div>
+        <div className="h-8 w-px bg-lorcana-gold"></div>
 
         {/* My Collection */}
-        <label className="flex items-center space-x-1 text-sm">
-          <input
-            type="checkbox"
-            checked={filters.inMyCollection === true}
-            onChange={toggleMyCollectionFilter}
-            className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
-          />
-          <span className="text-gray-300">My collection</span>
-        </label>
+        <CustomDropdown
+          value={filters.collectionFilter}
+          onChange={(value) => setFilters({...filters, collectionFilter: value as 'all' | 'owned' | 'not-owned'})}
+          options={[
+            { value: 'all', label: 'All cards' },
+            { value: 'owned', label: 'In collection' },
+            { value: 'not-owned', label: 'Not in collection' }
+          ]}
+          compact={true}
+        />
+      </div>
       </div>
     </div>
   );

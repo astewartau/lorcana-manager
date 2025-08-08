@@ -2,6 +2,149 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --lorcana-gold: #d3ba84;
+    --lorcana-navy: #26223d;
+    --lorcana-purple: #3d3659;
+    --lorcana-cream: #f9f6f0;
+    --lorcana-ink: #1a1a1a;
+  }
+
+  body {
+    @apply bg-lorcana-cream text-lorcana-ink;
+  }
+}
+
+@layer components {
+  .art-deco-border {
+    position: relative;
+    border: 2px solid var(--lorcana-gold);
+    background: white;
+  }
+
+  .art-deco-border::before,
+  .art-deco-border::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--lorcana-gold);
+  }
+
+  .art-deco-border::before {
+    top: -6px;
+    left: -6px;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .art-deco-border::after {
+    bottom: -6px;
+    right: -6px;
+    border-left: none;
+    border-top: none;
+  }
+
+  .art-deco-corner {
+    position: relative;
+  }
+
+  .art-deco-corner::before,
+  .art-deco-corner::after {
+    content: '';
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    background: linear-gradient(135deg, var(--lorcana-gold) 40%, transparent 40%);
+  }
+
+  .art-deco-corner::before {
+    top: 0;
+    left: 0;
+  }
+
+  .art-deco-corner::after {
+    bottom: 0;
+    right: 0;
+    transform: rotate(180deg);
+  }
+
+  .btn-lorcana {
+    @apply px-4 py-2 bg-lorcana-gold text-lorcana-ink font-semibold rounded-sm transition-all duration-200;
+    @apply hover:bg-opacity-90 hover:shadow-lg;
+    @apply active:scale-95;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-lorcana-outline {
+    @apply px-4 py-2 border-2 border-lorcana-gold text-lorcana-gold bg-transparent font-semibold rounded-sm transition-all duration-200;
+    @apply hover:bg-lorcana-gold hover:text-lorcana-ink;
+  }
+
+  .btn-lorcana-navy {
+    @apply px-4 py-2 bg-lorcana-navy text-white font-semibold rounded-sm transition-all duration-200;
+    @apply hover:bg-opacity-90 hover:shadow-lg;
+    @apply active:scale-95;
+  }
+
+  .card-lorcana {
+    @apply bg-white border-2 border-lorcana-gold rounded-sm shadow-md transition-all duration-200;
+    @apply hover:shadow-xl hover:border-lorcana-navy;
+  }
+
+  .section-connector {
+    background: linear-gradient(to bottom, var(--lorcana-navy), var(--lorcana-purple), transparent);
+    height: 2px;
+    opacity: 0.6;
+  }
+
+  .unified-interface {
+    background: linear-gradient(to bottom, 
+      var(--lorcana-navy) 0%, 
+      var(--lorcana-navy) 60%,
+      var(--lorcana-purple) 85%,
+      rgba(255,255,255,0.95) 100%
+    );
+  }
+
+  /* Custom dropdown art-deco styling */
+  .custom-dropdown {
+    position: relative;
+  }
+
+  .custom-dropdown button {
+    background: linear-gradient(145deg, var(--lorcana-cream) 0%, #f5f2ea 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+
+  .custom-dropdown button:hover {
+    background: linear-gradient(145deg, white 0%, var(--lorcana-cream) 100%);
+    box-shadow: 0 2px 8px rgba(211, 186, 132, 0.3);
+  }
+
+  .custom-dropdown .dropdown-menu {
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 32px rgba(38, 34, 61, 0.15), 0 0 0 1px var(--lorcana-gold);
+  }
+
+  .custom-dropdown .dropdown-option {
+    position: relative;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .custom-dropdown .dropdown-option:hover::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--lorcana-gold);
+  }
+}
+
 @keyframes shimmer {
   0% {
     transform: translateX(-100%);

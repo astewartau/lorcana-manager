@@ -61,15 +61,15 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
   const getVariantBackground = (variantType: 'regular' | 'foil' | 'enchanted' | 'special') => {
     switch (variantType) {
       case 'regular':
-        return 'bg-gray-100 border-gray-200';
+        return 'bg-lorcana-cream border-lorcana-gold';
       case 'foil':
-        return 'bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 border-blue-300';
+        return 'bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 border-lorcana-navy';
       case 'enchanted':
-        return 'bg-gradient-to-r from-red-200 via-yellow-200 via-green-200 via-blue-200 to-purple-200 border-purple-300';
+        return 'bg-gradient-to-r from-red-200 via-yellow-200 via-green-200 via-blue-200 to-purple-200 border-lorcana-gold';
       case 'special':
-        return 'bg-gradient-to-r from-yellow-200 via-orange-200 to-yellow-300 border-orange-300';
+        return 'bg-gradient-to-r from-yellow-200 via-orange-200 to-yellow-300 border-lorcana-gold';
       default:
-        return 'bg-gray-100 border-gray-200';
+        return 'bg-lorcana-cream border-lorcana-gold';
     }
   };
 
@@ -92,7 +92,7 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
         >
           <Minus size={10} />
         </button>
-        <span className="font-semibold text-xs min-w-[1rem] text-center text-gray-800">
+        <span className="font-semibold text-xs min-w-[1rem] text-center text-lorcana-ink">
           {quantity}
         </span>
         <button
@@ -113,7 +113,7 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
       {/* Card Image */}
       <div 
         ref={cardRef}
-        className="relative rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 ease-out aspect-[2.5/3.5] overflow-hidden cursor-pointer transform-gpu select-none"
+        className="relative rounded-sm shadow-lg hover:shadow-2xl transition-all duration-300 ease-out aspect-[2.5/3.5] overflow-hidden cursor-pointer transform-gpu select-none border-2 border-lorcana-gold"
         style={{
           transform: transform,
           transformOrigin: 'center center',
@@ -182,19 +182,6 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
           </>
         )}
         
-        {/* Variant indicators */}
-        <div className="absolute top-2 right-2 flex flex-col space-y-1">
-          {hasEnchanted && (
-            <div className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-              E
-            </div>
-          )}
-          {hasSpecial && (
-            <div className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-              S
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Quantity controls below card - all in one centered row */}

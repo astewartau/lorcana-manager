@@ -32,15 +32,15 @@ const RangeFilter: React.FC<RangeFilterProps> = ({
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg bg-white">
+    <div className="border-2 border-lorcana-gold rounded-sm bg-white shadow-sm">
       <div 
-        className={`flex justify-between items-center p-3 ${isCollapsible ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+        className={`flex justify-between items-center p-3 ${isCollapsible ? 'cursor-pointer hover:bg-lorcana-cream' : ''}`}
         onClick={isCollapsible ? () => setIsExpanded(!isExpanded) : undefined}
       >
         <div className="flex items-center space-x-2">
-          <h3 className="font-medium text-gray-900">{title}</h3>
+          <h3 className="font-medium text-lorcana-ink">{title}</h3>
           {isFiltered && (
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+            <span className="bg-lorcana-gold text-lorcana-ink text-xs font-medium px-2 py-1 rounded-sm">
               {selectedMin}-{selectedMax}
             </span>
           )}
@@ -52,7 +52,7 @@ const RangeFilter: React.FC<RangeFilterProps> = ({
                 e.stopPropagation();
                 handleReset();
               }}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-lorcana-navy hover:text-lorcana-ink transition-colors"
               title="Reset range"
             >
               <X size={16} />
@@ -65,11 +65,11 @@ const RangeFilter: React.FC<RangeFilterProps> = ({
       </div>
       
       {isExpanded && (
-        <div className="border-t border-gray-200 p-4">
+        <div className="border-t border-lorcana-gold p-4">
           <div className="space-y-4">
             <div className="flex items-center space-x-4">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Min</label>
+                <label className="block text-xs font-medium text-lorcana-ink mb-1">Min</label>
                 <input
                   type="number"
                   min={min}
@@ -77,11 +77,11 @@ const RangeFilter: React.FC<RangeFilterProps> = ({
                   step={step}
                   value={selectedMin}
                   onChange={(e) => onChange(Math.max(min, Math.min(parseInt(e.target.value) || min, selectedMax)), selectedMax)}
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 py-1 text-sm border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-lorcana-cream"
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Max</label>
+                <label className="block text-xs font-medium text-lorcana-ink mb-1">Max</label>
                 <input
                   type="number"
                   min={min}
@@ -89,7 +89,7 @@ const RangeFilter: React.FC<RangeFilterProps> = ({
                   step={step}
                   value={selectedMax}
                   onChange={(e) => onChange(selectedMin, Math.min(max, Math.max(parseInt(e.target.value) || max, selectedMin)))}
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 py-1 text-sm border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-lorcana-cream"
                 />
               </div>
             </div>
@@ -102,7 +102,7 @@ const RangeFilter: React.FC<RangeFilterProps> = ({
                 step={step}
                 value={selectedMin}
                 onChange={(e) => onChange(Math.min(parseInt(e.target.value), selectedMax), selectedMax)}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                className="w-full h-2 bg-lorcana-cream border border-lorcana-gold rounded-sm appearance-none cursor-pointer slider"
               />
               <input
                 type="range"
@@ -111,11 +111,11 @@ const RangeFilter: React.FC<RangeFilterProps> = ({
                 step={step}
                 value={selectedMax}
                 onChange={(e) => onChange(selectedMin, Math.max(parseInt(e.target.value), selectedMin))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                className="w-full h-2 bg-lorcana-cream border border-lorcana-gold rounded-sm appearance-none cursor-pointer slider"
               />
             </div>
             
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-lorcana-navy">
               <span>{min}</span>
               <span>{max}</span>
             </div>

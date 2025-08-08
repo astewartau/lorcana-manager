@@ -20,15 +20,15 @@ const InkwellFilter: React.FC<InkwellFilterProps> = ({
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg bg-white">
+    <div className="border-2 border-lorcana-gold rounded-sm bg-white shadow-sm">
       <div 
-        className="flex justify-between items-center p-3 cursor-pointer hover:bg-gray-50"
+        className="flex justify-between items-center p-3 cursor-pointer hover:bg-lorcana-cream"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center space-x-2">
-          <h3 className="font-medium text-gray-900">Inkwell</h3>
+          <h3 className="font-medium text-lorcana-ink">Inkwell</h3>
           {hasFilter && (
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+            <span className="bg-lorcana-gold text-lorcana-ink text-xs font-medium px-2 py-1 rounded-sm">
               {inkwellOnly ? 'Inkable' : 'Non-Inkable'}
             </span>
           )}
@@ -40,7 +40,7 @@ const InkwellFilter: React.FC<InkwellFilterProps> = ({
                 e.stopPropagation();
                 handleClear();
               }}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-lorcana-navy hover:text-lorcana-ink transition-colors"
               title="Clear filter"
             >
               <X size={16} />
@@ -51,7 +51,7 @@ const InkwellFilter: React.FC<InkwellFilterProps> = ({
       </div>
       
       {isExpanded && (
-        <div className="border-t border-gray-200 p-3">
+        <div className="border-t border-lorcana-gold p-3">
           <div className="space-y-2">
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
@@ -59,9 +59,9 @@ const InkwellFilter: React.FC<InkwellFilterProps> = ({
                 name="inkwell"
                 checked={inkwellOnly === null}
                 onChange={() => onChange(null)}
-                className="text-blue-600 focus:ring-blue-500"
+                className="text-lorcana-navy focus:ring-lorcana-gold"
               />
-              <span className="text-sm text-gray-700">All Cards</span>
+              <span className="text-sm text-lorcana-ink">All Cards</span>
             </label>
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
@@ -69,9 +69,9 @@ const InkwellFilter: React.FC<InkwellFilterProps> = ({
                 name="inkwell"
                 checked={inkwellOnly === true}
                 onChange={() => onChange(true)}
-                className="text-blue-600 focus:ring-blue-500"
+                className="text-lorcana-navy focus:ring-lorcana-gold"
               />
-              <span className="text-sm text-gray-700">Inkable Only</span>
+              <span className="text-sm text-lorcana-ink">Inkable Only</span>
             </label>
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
@@ -79,9 +79,9 @@ const InkwellFilter: React.FC<InkwellFilterProps> = ({
                 name="inkwell"
                 checked={inkwellOnly === false}
                 onChange={() => onChange(false)}
-                className="text-blue-600 focus:ring-blue-500"
+                className="text-lorcana-navy focus:ring-lorcana-gold"
               />
-              <span className="text-sm text-gray-700">Non-Inkable Only</span>
+              <span className="text-sm text-lorcana-ink">Non-Inkable Only</span>
             </label>
           </div>
         </div>

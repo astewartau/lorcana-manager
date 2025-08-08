@@ -35,7 +35,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
       {/* Top pagination info */}
       {showTopInfo && (
         <div className="flex justify-between items-center mb-4">
-          <div className="text-gray-600">
+          <div className="text-lorcana-ink font-medium">
             Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} cards
           </div>
           {showCompact && (
@@ -43,17 +43,17 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
               <button
                 onClick={onPrevPage}
                 disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 hover:bg-gray-50 transition-colors"
+                className="p-2 rounded-sm border-2 border-lorcana-gold disabled:bg-gray-100 disabled:text-gray-400 hover:bg-lorcana-cream transition-colors"
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-lorcana-ink">
                 Page {currentPage} of {totalPages}
               </span>
               <button
                 onClick={onNextPage}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 hover:bg-gray-50 transition-colors"
+                className="p-2 rounded-sm border-2 border-lorcana-gold disabled:bg-gray-100 disabled:text-gray-400 hover:bg-lorcana-cream transition-colors"
               >
                 <ChevronRight size={16} />
               </button>
@@ -68,7 +68,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           <button
             onClick={onPrevPage}
             disabled={currentPage === 1}
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 hover:bg-gray-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 rounded-sm border-2 border-lorcana-gold disabled:bg-gray-100 disabled:text-gray-400 hover:bg-lorcana-cream transition-colors"
           >
             <ChevronLeft size={16} />
             <span>Previous</span>
@@ -93,8 +93,8 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
                   onClick={() => onPageChange(pageNum)}
                   className={`px-3 py-2 rounded-lg text-sm transition-colors ${
                     pageNum === currentPage
-                      ? 'bg-blue-600 text-white'
-                      : 'border border-gray-300 hover:bg-gray-50'
+                      ? 'bg-lorcana-navy text-lorcana-gold'
+                      : 'border-2 border-lorcana-gold hover:bg-lorcana-cream'
                   }`}
                 >
                   {pageNum}
@@ -106,7 +106,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           <button
             onClick={onNextPage}
             disabled={currentPage === totalPages}
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400 hover:bg-gray-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 rounded-sm border-2 border-lorcana-gold disabled:bg-gray-100 disabled:text-gray-400 hover:bg-lorcana-cream transition-colors"
           >
             <span>Next</span>
             <ChevronRight size={16} />

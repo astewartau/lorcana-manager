@@ -48,31 +48,33 @@ function App() {
   return (
     <CollectionProvider>
       <DeckProvider>
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+        <div className="min-h-screen bg-lorcana-cream">
           <div className="container mx-auto px-4 py-6">
-            <header className="mb-8">
-              <h1 className="text-4xl font-bold text-gray-900 mb-2 text-center">
-                Lorcana Collection Manager
-              </h1>
-              <p className="text-gray-600 text-center">
-                Manage your Disney Lorcana TCG collection
-              </p>
-            </header>
+            {/* Unified header section */}
+            <div className="bg-lorcana-navy rounded-t-sm shadow-xl border-2 border-lorcana-gold border-b-0">
+              <header className="p-6 pb-4">
+                <h1 className="text-4xl font-bold text-lorcana-gold mb-2 text-center tracking-wider">
+                  Lorcana Collection Manager
+                </h1>
+                <p className="text-lorcana-cream text-center">
+                  Manage your Disney Lorcana TCG collection
+                </p>
+              </header>
 
-            {!['deck-builder', 'deck-summary'].includes(activeTab) && (
-              <nav className="mb-8">
-                <div className="flex justify-center">
-                  <div className="bg-white rounded-lg shadow-md p-1 flex space-x-1">
+              {!['deck-builder', 'deck-summary'].includes(activeTab) && (
+                <nav className="px-6 pb-3">
+                  <div className="flex justify-center">
+                    <div className="bg-lorcana-purple/50 backdrop-blur border border-lorcana-gold/50 rounded-sm p-1 flex space-x-1">
                     {tabs.map((tab) => {
                       const Icon = tab.icon;
                       return (
                         <button
                           key={tab.id}
                           onClick={() => setActiveTab(tab.id)}
-                          className={`flex items-center space-x-2 px-6 py-3 rounded-md transition-all duration-200 ${
+                          className={`flex items-center space-x-2 px-6 py-3 rounded-sm transition-all duration-200 ${
                             activeTab === tab.id
-                              ? 'bg-lorcana-blue text-white shadow-md'
-                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                              ? 'bg-lorcana-gold text-lorcana-navy shadow-md'
+                              : 'text-lorcana-cream hover:bg-lorcana-purple hover:text-lorcana-gold'
                           }`}
                         >
                           <Icon size={20} />
@@ -80,10 +82,11 @@ function App() {
                         </button>
                       );
                     })}
+                    </div>
                   </div>
-                </div>
-              </nav>
-            )}
+                </nav>
+              )}
+            </div>
 
             <main>{renderContent()}</main>
           </div>

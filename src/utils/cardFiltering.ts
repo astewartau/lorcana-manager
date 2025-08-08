@@ -24,42 +24,72 @@ export const filterCards = (
                          (baseCard.story?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
     
     const matchesSet = filters.sets.length === 0 || filters.sets.includes(baseCard.setCode);
-    const matchesColor = filters.colors.length === 0 || (() => {
-      const selectedColors = filters.colors.filter(c => c !== '');
-      const hasNoneSelected = filters.colors.includes('');
-      
-      // Handle "None" color specifically
-      if (baseCard.color === '') {
-        return hasNoneSelected;
-      }
-      
-      // No colors selected (except maybe "None")
-      if (selectedColors.length === 0) {
-        return false;
-      }
-      
+    // Handle Illumineer's Quest cards (no ink color) separately
+    const isIllumineerQuest = baseCard.color === '';
+    const matchesIllumineerQuest = isIllumineerQuest ? filters.includeIllumineerQuest : true;
+    
+    // Color filtering - only apply to non-Illumineer's Quest cards
+    const matchesColor = isIllumineerQuest || (() => {
       const isDualInk = baseCard.color.includes('-');
       
-      if (filters.showAnyWithColors) {
-        // Inclusive mode: show any card that includes any selected color
-        return selectedColors.some(color => baseCard.color.includes(color));
-      } else {
-        // Restrictive mode
-        if (selectedColors.length === 1) {
-          // Single color selected: only show single-ink cards of that color
-          return !isDualInk && baseCard.color === selectedColors[0];
-        } else {
-          // Two or more colors selected: show single-ink cards of selected colors 
-          // AND dual-ink cards with combinations of only the selected colors
-          if (isDualInk) {
-            // For dual-ink: both colors must be in the selected colors
-            const [color1, color2] = baseCard.color.split('-');
-            return selectedColors.includes(color1) && selectedColors.includes(color2);
-          } else {
-            // For single-ink: must be one of the selected colors
-            return selectedColors.includes(baseCard.color);
-          }
+      // If no colors are selected, handle based on mode
+      if (filters.colors.length === 0) {
+        switch (filters.colorMatchMode) {
+          case 'dual-only':
+            // Show all dual-ink cards when no specific colors selected
+            return isDualInk;
+          case 'any':
+          case 'only':
+          default:
+            // Show all cards when no colors selected
+            return true;
         }
+      }
+      
+      // Colors are selected, apply filtering logic
+      switch (filters.colorMatchMode) {
+        case 'any':
+          // Match any card that includes any selected color
+          return filters.colors.some(color => baseCard.color.includes(color));
+          
+        case 'only':
+          // Show only cards with the exact selected colors
+          if (filters.colors.length === 1) {
+            // Single color selected: only show single-ink cards of that color
+            return !isDualInk && baseCard.color === filters.colors[0];
+          } else {
+            // Multiple colors selected: show single-ink cards of selected colors 
+            // AND dual-ink cards with combinations of only the selected colors
+            if (isDualInk) {
+              // For dual-ink: both colors must be in the selected colors
+              const [color1, color2] = baseCard.color.split('-');
+              return filters.colors.includes(color1) && filters.colors.includes(color2);
+            } else {
+              // For single-ink: must be one of the selected colors
+              return filters.colors.includes(baseCard.color);
+            }
+          }
+          
+        case 'dual-only':
+          // Only show dual-ink cards
+          if (!isDualInk) return false;
+          
+          if (filters.colors.length === 1) {
+            // Single color selected: show any dual-ink that includes that color
+            return baseCard.color.includes(filters.colors[0]);
+          } else if (filters.colors.length === 2) {
+            // Two colors selected: show only the exact dual-ink combination
+            const [color1, color2] = baseCard.color.split('-');
+            const sortedCardColors = [color1, color2].sort();
+            const sortedSelectedColors = [...filters.colors].sort();
+            return sortedCardColors.join('-') === sortedSelectedColors.join('-');
+          } else {
+            // More than 2 colors selected: no dual-ink can match exactly
+            return false;
+          }
+          
+        default:
+          return true;
       }
     })();
     const matchesType = filters.types.length === 0 || filters.types.includes(baseCard.type);
@@ -76,11 +106,14 @@ export const filterCards = (
     const matchesInkwell = filters.inkwellOnly === null || baseCard.inkwell === filters.inkwellOnly;
     
     // Check if card is in collection
-    const matchesInCollection = filters.inMyCollection === null || (() => {
+    const matchesInCollection = (() => {
+      if (filters.collectionFilter === 'all') return true;
+      
       const quantities = getVariantQuantities(consolidatedCard.fullName);
       const totalOwned = quantities.regular + quantities.foil + quantities.enchanted + quantities.special;
       const isInCollection = totalOwned > 0;
-      return filters.inMyCollection ? isInCollection : !isInCollection;
+      
+      return filters.collectionFilter === 'owned' ? isInCollection : !isInCollection;
     })();
     
     // Check card count filter
@@ -99,7 +132,7 @@ export const filterCards = (
     // Check consolidated card specific filters
     const matchesConsolidatedFilters = consolidatedCardMatchesFilters(consolidatedCard, filters);
 
-    return matchesSearch && matchesSet && matchesColor && matchesType && 
+    return matchesSearch && matchesSet && matchesColor && matchesIllumineerQuest && matchesType && 
            matchesStory && matchesSubtype && matchesCostList && matchesCostRange &&
            matchesStrength && matchesWillpower && matchesLore && matchesInkwell &&
            matchesInCollection && matchesCardCount && matchesConsolidatedFilters;
@@ -278,7 +311,8 @@ export const countActiveFilters = (filters: FilterOptions): number => {
     (filters.inkwellOnly !== null ? 1 : 0) +
     (filters.hasEnchanted !== null ? 1 : 0) +
     (filters.hasSpecial !== null ? 1 : 0) +
-    (filters.inMyCollection !== null ? 1 : 0) +
+    (filters.includeIllumineerQuest ? 1 : 0) +
+    (filters.collectionFilter !== 'all' ? 1 : 0) +
     (filters.cardCountOperator !== null ? 1 : 0)
   );
 };

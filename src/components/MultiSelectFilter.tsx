@@ -10,6 +10,7 @@ interface MultiSelectFilterProps {
   isCollapsible?: boolean;
   defaultCollapsed?: boolean;
   iconMap?: Record<string, string>;
+  customHeaderContent?: React.ReactNode;
 }
 
 const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
@@ -20,7 +21,8 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
   maxHeight = 'max-h-48',
   isCollapsible = true,
   defaultCollapsed = false,
-  iconMap
+  iconMap,
+  customHeaderContent
 }) => {
   const [isExpanded, setIsExpanded] = useState(!defaultCollapsed);
 
@@ -45,15 +47,15 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg bg-white">
+    <div className="border-2 border-lorcana-gold rounded-sm bg-white shadow-sm">
       <div 
-        className={`flex justify-between items-center p-3 ${isCollapsible ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+        className={`flex justify-between items-center p-3 ${isCollapsible ? 'cursor-pointer hover:bg-lorcana-cream' : ''}`}
         onClick={isCollapsible ? () => setIsExpanded(!isExpanded) : undefined}
       >
         <div className="flex items-center space-x-2">
-          <h3 className="font-medium text-gray-900">{title}</h3>
+          <h3 className="font-medium text-lorcana-ink">{title}</h3>
           {selectedValues.length > 0 && (
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+            <span className="bg-lorcana-gold text-lorcana-ink text-xs font-medium px-2 py-1 rounded-sm">
               {selectedValues.length}
             </span>
           )}
@@ -65,7 +67,7 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
                 e.stopPropagation();
                 clearAll();
               }}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-lorcana-navy hover:text-lorcana-ink transition-colors"
               title="Clear all"
             >
               <X size={16} />
@@ -78,11 +80,16 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
       </div>
       
       {isExpanded && (
-        <div className="border-t border-gray-200">
-          <div className="p-3 border-b border-gray-100 bg-gray-50">
+        <div className="border-t border-lorcana-gold">
+          {customHeaderContent && (
+            <div className="p-3 border-b border-gray-100 bg-lorcana-cream">
+              {customHeaderContent}
+            </div>
+          )}
+          <div className="p-3 border-b border-lorcana-gold/30 bg-gray-50">
             <button
               onClick={handleSelectAll}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="text-sm text-lorcana-navy hover:text-lorcana-ink font-medium"
             >
               {selectedValues.length === options.length ? 'Deselect All' : 'Select All'}
             </button>
@@ -91,13 +98,13 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
             {options.map((option) => (
               <label
                 key={option}
-                className="flex items-center space-x-2 p-2 hover:bg-gray-50 cursor-pointer"
+                className="flex items-center space-x-2 p-2 hover:bg-lorcana-cream cursor-pointer"
               >
                 <input
                   type="checkbox"
                   checked={selectedValues.includes(option)}
                   onChange={() => handleToggle(option)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-lorcana-gold text-lorcana-navy focus:ring-lorcana-gold"
                 />
                 {iconMap && iconMap[option.toString()] && (
                   <img 
@@ -106,7 +113,7 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
                     className="w-4 h-4 flex-shrink-0"
                   />
                 )}
-                <span className="text-sm text-gray-700">{option}</span>
+                <span className="text-sm text-lorcana-ink">{option}</span>
               </label>
             ))}
           </div>

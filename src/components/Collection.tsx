@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Package, Upload, Trash2, TrendingUp, Star } from 'lucide-react';
 import { useCollection } from '../contexts/CollectionContext';
 import { consolidatedCards, sets } from '../data/allCards';
+import { RARITY_ICONS } from '../constants/icons';
 import DreambornImport from './DreambornImport';
 
 interface SetSummary {
@@ -46,21 +47,58 @@ const Collection: React.FC = () => {
           totalOwnedQuantity += totalCardQuantity;
         }
 
-        // Track rarity breakdown
-        const rarity = consolidatedCard.baseCard.rarity;
-        if (!rarityBreakdown[rarity]) {
-          rarityBreakdown[rarity] = { owned: 0, playable: 0, total: 0 };
+        // Track rarity breakdown for base card
+        const baseRarity = consolidatedCard.baseCard.rarity;
+        if (!rarityBreakdown[baseRarity]) {
+          rarityBreakdown[baseRarity] = { owned: 0, playable: 0, total: 0 };
         }
-        rarityBreakdown[rarity].total++;
+        rarityBreakdown[baseRarity].total++;
         
-        // Master set: at least one copy
-        if (totalCardQuantity > 0) {
-          rarityBreakdown[rarity].owned++;
+        // Count owned base card variants (regular + foil)
+        const baseCardQuantity = quantities.regular + quantities.foil;
+        if (baseCardQuantity > 0) {
+          rarityBreakdown[baseRarity].owned++;
         }
         
-        // Playable set: 4 or more copies
-        if (totalCardQuantity >= 4) {
-          rarityBreakdown[rarity].playable++;
+        // Playable set for base card (4 or more copies)
+        if (baseCardQuantity >= 4) {
+          rarityBreakdown[baseRarity].playable++;
+        }
+
+        // Track enchanted cards separately if they exist
+        if (consolidatedCard.hasEnchanted && consolidatedCard.enchantedCard) {
+          if (!rarityBreakdown['Enchanted']) {
+            rarityBreakdown['Enchanted'] = { owned: 0, playable: 0, total: 0 };
+          }
+          rarityBreakdown['Enchanted'].total++;
+          
+          // Count owned enchanted variants
+          if (quantities.enchanted > 0) {
+            rarityBreakdown['Enchanted'].owned++;
+          }
+          
+          // Playable set for enchanted (4 or more copies)
+          if (quantities.enchanted >= 4) {
+            rarityBreakdown['Enchanted'].playable++;
+          }
+        }
+
+        // Track special cards separately if they exist
+        if (consolidatedCard.hasSpecial && consolidatedCard.specialCards) {
+          if (!rarityBreakdown['Special']) {
+            rarityBreakdown['Special'] = { owned: 0, playable: 0, total: 0 };
+          }
+          rarityBreakdown['Special'].total++;
+          
+          // Count owned special variants
+          if (quantities.special > 0) {
+            rarityBreakdown['Special'].owned++;
+          }
+          
+          // Playable set for special (4 or more copies)
+          if (quantities.special >= 4) {
+            rarityBreakdown['Special'].playable++;
+          }
         }
       });
 
@@ -84,23 +122,11 @@ const Collection: React.FC = () => {
     setShowDeleteConfirm(false);
   };
 
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case 'Common': return 'text-gray-600';
-      case 'Uncommon': return 'text-green-600';
-      case 'Rare': return 'text-blue-600';
-      case 'Super Rare': return 'text-purple-600';
-      case 'Legendary': return 'text-yellow-600';
-      case 'Enchanted': return 'text-pink-600';
-      case 'Special': return 'text-orange-600';
-      default: return 'text-gray-600';
-    }
-  };
 
   const getProgressBarColor = (percentage: number) => {
-    if (percentage === 100) return 'bg-green-500';
-    if (percentage >= 75) return 'bg-blue-500';
-    if (percentage >= 50) return 'bg-yellow-500';
+    if (percentage === 100) return 'bg-lorcana-gold';
+    if (percentage >= 75) return 'bg-lorcana-navy';
+    if (percentage >= 50) return 'bg-lorcana-purple';
     if (percentage >= 25) return 'bg-orange-500';
     return 'bg-red-500';
   };
@@ -108,11 +134,11 @@ const Collection: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-lorcana-navy border-2 border-lorcana-gold rounded-sm shadow-xl p-6 art-deco-corner">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">My Collection</h2>
-            <div className="flex gap-6 text-sm text-gray-600">
+            <h2 className="text-3xl font-bold text-lorcana-gold mb-2 tracking-wider">My Collection</h2>
+            <div className="flex gap-6 text-sm text-lorcana-cream">
               <div className="flex items-center gap-2">
                 <Package size={16} />
                 <span>{totalCards} total cards</span>
@@ -125,7 +151,7 @@ const Collection: React.FC = () => {
           <div className="flex space-x-2 mt-4 md:mt-0">
             <button
               onClick={() => setShowImportModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="btn-lorcana flex items-center space-x-2"
             >
               <Upload size={16} />
               <span>Import Dreamborn Collection</span>
@@ -133,7 +159,7 @@ const Collection: React.FC = () => {
             {totalCards > 0 && (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-sm hover:bg-red-700 transition-colors border-2 border-red-700"
               >
                 <Trash2 size={16} />
                 <span>Delete All</span>
@@ -145,48 +171,48 @@ const Collection: React.FC = () => {
 
       {/* Set Summaries */}
       {totalCards === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <Package size={48} className="mx-auto text-gray-400 mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Your collection is empty</h3>
-          <p className="text-gray-600 mb-6">
+        <div className="bg-white border-2 border-lorcana-gold rounded-sm shadow-lg p-12 text-center art-deco-corner">
+          <Package size={48} className="mx-auto text-lorcana-navy mb-4" />
+          <h3 className="text-xl font-semibold text-lorcana-ink mb-2">Your collection is empty</h3>
+          <p className="text-lorcana-navy mb-6">
             Start building your collection by browsing cards and adding them from the Browse Cards tab.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {setSummaries.map((setData) => (
-            <div key={setData.code} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+            <div key={setData.code} className="card-lorcana p-6 hover:shadow-xl transition-all duration-300 hover:scale-105">
               {/* Set Header */}
               <div className="mb-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">{setData.name}</h3>
-                <p className="text-sm text-gray-600">Set {setData.number} • {setData.code}</p>
+                <h3 className="text-lg font-bold text-lorcana-ink mb-1">{setData.name}</h3>
+                <p className="text-sm text-lorcana-navy">Set {setData.number} • {setData.code}</p>
               </div>
 
               {/* Progress Overview */}
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700">Master Set</span>
-                  <span className="text-sm font-bold text-gray-900">
+                  <span className="text-sm font-medium text-lorcana-ink">Master Set</span>
+                  <span className="text-sm font-bold text-lorcana-navy">
                     {setData.ownedCards}/{setData.totalCards} ({setData.ownedPercentage.toFixed(1)}%)
                   </span>
                 </div>
                 
                 {/* Progress Bar */}
-                <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
+                <div className="w-full bg-lorcana-cream border border-lorcana-gold rounded-sm h-3 mb-3">
                   <div
-                    className={`h-3 rounded-full transition-all duration-300 ${getProgressBarColor(setData.ownedPercentage)}`}
+                    className={`h-3 rounded-sm transition-all duration-300 ${getProgressBarColor(setData.ownedPercentage)}`}
                     style={{ width: `${setData.ownedPercentage}%` }}
                   />
                 </div>
 
                 {/* Total Owned */}
                 <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1 text-gray-600">
+                  <div className="flex items-center gap-1 text-lorcana-navy">
                     <TrendingUp size={14} />
                     <span>Total owned: {setData.totalOwned}</span>
                   </div>
                   {setData.ownedPercentage === 100 && (
-                    <div className="flex items-center gap-1 text-green-600">
+                    <div className="flex items-center gap-1 text-lorcana-gold">
                       <Star size={14} />
                       <span className="font-medium">Complete!</span>
                     </div>
@@ -196,17 +222,16 @@ const Collection: React.FC = () => {
 
               {/* Rarity Breakdown Table */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Rarity Breakdown</h4>
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="border-2 border-lorcana-gold rounded-sm overflow-hidden">
                   <table className="w-full text-xs">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-lorcana-navy">
                       <tr>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Rarity</th>
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">Master Set</th>
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">Playable Set</th>
+                        <th className="px-3 py-2 text-left font-medium text-lorcana-gold">Rarity</th>
+                        <th className="px-3 py-2 text-center font-medium text-lorcana-gold">Master Set</th>
+                        <th className="px-3 py-2 text-center font-medium text-lorcana-gold">Playable Set</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="bg-lorcana-purple divide-y divide-lorcana-gold/50">
                       {Object.entries(setData.rarityBreakdown)
                         .filter(([, data]) => data.total > 0)
                         .sort(([a], [b]) => {
@@ -214,14 +239,23 @@ const Collection: React.FC = () => {
                           return rarityOrder.indexOf(a) - rarityOrder.indexOf(b);
                         })
                         .map(([rarity, data]) => (
-                          <tr key={rarity} className="hover:bg-gray-50">
+                          <tr key={rarity} className="hover:bg-lorcana-navy transition-colors">
                             <td className="px-3 py-2">
-                              <span className={`font-medium ${getRarityColor(rarity)}`}>{rarity}</span>
+                              <div className="flex items-center gap-2">
+                                {RARITY_ICONS[rarity] && (
+                                  <img 
+                                    src={RARITY_ICONS[rarity]} 
+                                    alt={rarity}
+                                    className="w-4 h-4"
+                                  />
+                                )}
+                                <span className="font-medium text-white">{rarity}</span>
+                              </div>
                             </td>
-                            <td className="px-3 py-2 text-center text-gray-600">
+                            <td className="px-3 py-2 text-center text-lorcana-cream">
                               {data.owned}/{data.total} ({data.total > 0 ? ((data.owned / data.total) * 100).toFixed(0) : 0}%)
                             </td>
-                            <td className="px-3 py-2 text-center text-gray-600">
+                            <td className="px-3 py-2 text-center text-lorcana-cream">
                               {data.playable}/{data.total} ({data.total > 0 ? ((data.playable / data.total) * 100).toFixed(0) : 0}%)
                             </td>
                           </tr>
@@ -243,30 +277,30 @@ const Collection: React.FC = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white border-2 border-lorcana-gold rounded-sm p-6 max-w-md w-full mx-4 shadow-2xl art-deco-corner">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="bg-red-100 p-3 rounded-full">
+              <div className="bg-red-100 border border-red-300 p-3 rounded-sm">
                 <Trash2 size={24} className="text-red-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Delete All Cards</h3>
-                <p className="text-sm text-gray-600">This action cannot be undone</p>
+                <h3 className="text-lg font-semibold text-lorcana-ink">Delete All Cards</h3>
+                <p className="text-sm text-lorcana-navy">This action cannot be undone</p>
               </div>
             </div>
-            <p className="text-gray-700 mb-6">
+            <p className="text-lorcana-ink mb-6">
               Are you sure you want to delete all {totalCards} cards from your collection? 
               This will permanently remove all cards and cannot be recovered.
             </p>
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="btn-lorcana-outline"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAll}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="px-4 py-2 bg-red-600 text-white rounded-sm hover:bg-red-700 transition-colors border-2 border-red-700"
               >
                 Delete All
               </button>

@@ -83,7 +83,7 @@ export interface FilterOptions {
   search: string;
   sets: string[];
   colors: string[];
-  showAnyWithColors: boolean; // New field for inclusive/restrictive color filtering
+  colorMatchMode: 'any' | 'only' | 'dual-only'; // Color filtering mode
   rarities: string[];
   types: string[];
   stories: string[];
@@ -100,7 +100,8 @@ export interface FilterOptions {
   inkwellOnly: boolean | null;
   hasEnchanted: boolean | null;
   hasSpecial: boolean | null;
-  inMyCollection: boolean | null;
+  includeIllumineerQuest: boolean;
+  collectionFilter: 'all' | 'owned' | 'not-owned';
   cardCountOperator: 'eq' | 'gte' | 'lte' | null;
   cardCountValue: number;
 }

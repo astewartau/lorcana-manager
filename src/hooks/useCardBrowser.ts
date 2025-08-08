@@ -12,7 +12,7 @@ export const useCardBrowser = () => {
   // State management
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [sortBy, setSortBy] = useState<SortOption>({ field: 'name', direction: 'asc' });
+  const [sortBy, setSortBy] = useState<SortOption>({ field: 'set', direction: 'desc' });
   const [groupBy, setGroupBy] = useState<string>('none');
   const [filters, setFilters] = useState<FilterOptions>(getDefaultFilters());
   const [showFilters, setShowFilters] = useState(false);
@@ -77,10 +77,10 @@ export const useCardBrowser = () => {
     }
     
     // Check if this card would now be filtered out due to collection filters
-    if (filters.inMyCollection !== null) {
+    if (filters.collectionFilter !== 'all') {
       console.log('Checking if card would be filtered out...', {
         cardName: consolidatedCard.baseCard.name,
-        filter: filters.inMyCollection,
+        filter: filters.collectionFilter,
         change
       });
       
@@ -94,8 +94,8 @@ export const useCardBrowser = () => {
       
       // Check if card would be filtered out after the change
       const wouldBeFilteredOut = (
-        (filters.inMyCollection === true && !willBeInCollection) ||  // Filter wants "in collection" but card will not be in collection
-        (filters.inMyCollection === false && willBeInCollection)     // Filter wants "not in collection" but card will be in collection
+        (filters.collectionFilter === 'owned' && !willBeInCollection) ||  // Filter wants "in collection" but card will not be in collection
+        (filters.collectionFilter === 'not-owned' && willBeInCollection)     // Filter wants "not in collection" but card will be in collection
       );
       
       console.log('Stale card prediction:', {
@@ -104,7 +104,7 @@ export const useCardBrowser = () => {
         change,
         predictedTotalOwned,
         willBeInCollection,
-        filterWantsInCollection: filters.inMyCollection,
+        filterWantsInCollection: filters.collectionFilter,
         wouldBeFilteredOut,
         currentStaleIds: Array.from(staleCardIds)
       });
