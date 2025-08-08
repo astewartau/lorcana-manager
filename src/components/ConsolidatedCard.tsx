@@ -15,11 +15,12 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
   onQuantityChange,
   onCardClick
 }) => {
-  const { baseCard, hasEnchanted, hasSpecial } = consolidatedCard;
+  const { baseCard, hasEnchanted, hasSpecial, enchantedCard } = consolidatedCard;
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [transform, setTransform] = useState('');
   const [lightPosition, setLightPosition] = useState({ x: 50, y: 50 });
+  const [showEnchanted, setShowEnchanted] = useState(false);
   
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -45,12 +46,16 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
   
   const handleMouseEnter = () => {
     setIsHovered(true);
+    if (hasEnchanted) {
+      setShowEnchanted(true);
+    }
   };
   
   const handleMouseLeave = () => {
     setIsHovered(false);
     setTransform('');
     setLightPosition({ x: 50, y: 50 });
+    setShowEnchanted(false);
   };
 
   const getVariantBackground = (variantType: 'regular' | 'foil' | 'enchanted' | 'special') => {
@@ -119,22 +124,62 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
         onMouseLeave={handleMouseLeave}
         onClick={() => onCardClick?.(consolidatedCard)}
       >
+        {/* Base card image */}
         <img 
           src={baseCard.images.full} 
           alt={baseCard.fullName}
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
           loading="lazy"
-          style={{ pointerEvents: 'none' }}
+          style={{ 
+            pointerEvents: 'none',
+            opacity: hasEnchanted && showEnchanted ? 0 : 1,
+            transition: 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}
         />
+        
+        {/* Enchanted card image (only rendered if available) */}
+        {hasEnchanted && enchantedCard && (
+          <img 
+            src={enchantedCard.images.full} 
+            alt={enchantedCard.fullName}
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+            style={{ 
+              pointerEvents: 'none',
+              opacity: showEnchanted ? 1 : 0,
+              transition: 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              transform: showEnchanted ? 'scale(1)' : 'scale(1.05)',
+              filter: showEnchanted ? 'none' : 'brightness(1.2) saturate(1.3)'
+            }}
+          />
+        )}
         
         {/* Light overlay effect */}
         {isHovered && (
-          <div 
-            className="absolute inset-0 pointer-events-none opacity-30 transition-opacity duration-300"
-            style={{
-              background: `radial-gradient(circle at ${lightPosition.x}% ${lightPosition.y}%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 30%, transparent 60%)`
-            }}
-          />
+          <>
+            <div 
+              className="absolute inset-0 pointer-events-none opacity-30 transition-opacity duration-300"
+              style={{
+                background: `radial-gradient(circle at ${lightPosition.x}% ${lightPosition.y}%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 30%, transparent 60%)`
+              }}
+            />
+            {/* Enchanted shimmer effect */}
+            {hasEnchanted && showEnchanted && (
+              <div 
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: `linear-gradient(105deg, 
+                    transparent 40%, 
+                    rgba(255, 255, 255, 0.7) 45%, 
+                    rgba(255, 255, 255, 0.9) 50%, 
+                    rgba(255, 255, 255, 0.7) 55%, 
+                    transparent 60%)`,
+                  transform: 'translateX(-100%)',
+                  animation: 'shimmer 1.5s ease-out'
+                }}
+              />
+            )}
+          </>
         )}
         
         {/* Variant indicators */}
