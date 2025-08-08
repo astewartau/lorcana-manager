@@ -67,6 +67,35 @@ export const CollectionProvider: React.FC<CollectionProviderProps> = ({ children
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, session]);
 
+  // Set up real-time subscription for collection changes
+  useEffect(() => {
+    if (!user || !session) return;
+
+    console.log('Setting up real-time subscription for user:', user.id);
+
+    const channel = supabase
+      .channel('collection_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: TABLES.USER_COLLECTIONS,
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Real-time collection change:', payload);
+          handleRealtimeChange(payload);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [user, session]);
+
   // Save to localStorage as backup whenever collection changes
   useEffect(() => {
     if (isInitialized) {
@@ -113,6 +142,49 @@ export const CollectionProvider: React.FC<CollectionProviderProps> = ({ children
       setVariantCollection(loadFromStorage(STORAGE_KEYS.COLLECTION_VARIANTS, []));
     }
     setIsInitialized(true);
+  };
+
+  const handleRealtimeChange = (payload: any) => {
+    const { eventType, new: newRecord, old: oldRecord } = payload;
+    
+    setVariantCollection(prev => {
+      switch (eventType) {
+        case 'INSERT':
+        case 'UPDATE':
+          if (newRecord) {
+            const updatedCard: CollectionCardVariants = {
+              cardId: 0, // We don't store cardId in Supabase
+              fullName: newRecord.card_name,
+              regular: newRecord.regular_count,
+              foil: newRecord.foil_count,
+              enchanted: newRecord.enchanted_count,
+              special: newRecord.special_count
+            };
+
+            const existingIndex = prev.findIndex(card => card.fullName === newRecord.card_name);
+            if (existingIndex >= 0) {
+              // Update existing card
+              const newCollection = [...prev];
+              newCollection[existingIndex] = updatedCard;
+              return newCollection;
+            } else {
+              // Add new card
+              return [...prev, updatedCard];
+            }
+          }
+          break;
+
+        case 'DELETE':
+          if (oldRecord) {
+            return prev.filter(card => card.fullName !== oldRecord.card_name);
+          }
+          break;
+
+        default:
+          break;
+      }
+      return prev;
+    });
   };
 
   const syncCardToSupabase = async (card: CollectionCardVariants) => {
