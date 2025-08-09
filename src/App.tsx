@@ -75,6 +75,16 @@ function AppContent() {
     }
   };
 
+  const handleUpdateDeckDescription = (description: string) => {
+    if (currentDeck) {
+      updateDeck({
+        ...currentDeck,
+        description,
+        updatedAt: new Date()
+      });
+    }
+  };
+
   useEffect(() => {
     const controlNavbar = () => {
       const currentScrollY = window.scrollY;
@@ -297,6 +307,7 @@ function AppContent() {
                     onViewDeck={handleViewDeck}
                     onStopEditing={handleStopEditingDeck}
                     onUpdateDeckName={handleUpdateDeckName}
+                    onUpdateDeckDescription={handleUpdateDeckDescription}
                     validation={validateDeck(currentDeck)}
                     isCollapsed={sidebarCollapsed}
                   />

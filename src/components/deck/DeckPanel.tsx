@@ -12,6 +12,7 @@ interface DeckPanelProps {
   onViewDeck?: (deckId?: string) => void;
   onStopEditing?: () => void;
   onUpdateDeckName?: (name: string) => void;
+  onUpdateDeckDescription?: (description: string) => void;
   validation: { isValid: boolean; errors: string[] };
   isCollapsed?: boolean;
 }
@@ -24,6 +25,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
   onViewDeck,
   onStopEditing,
   onUpdateDeckName,
+  onUpdateDeckDescription,
   validation,
   isCollapsed = false
 }) => {
@@ -40,11 +42,14 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
   
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(deck.name);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState(deck.description || '');
 
-  // Update editedName when deck changes
+  // Update editedName and editedDescription when deck changes
   useEffect(() => {
     setEditedName(deck.name);
-  }, [deck.name]);
+    setEditedDescription(deck.description || '');
+  }, [deck.name, deck.description]);
 
   const handleStartEditingName = () => {
     setIsEditingName(true);
@@ -68,6 +73,32 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
       handleSaveName();
     } else if (e.key === 'Escape') {
       handleCancelNameEdit();
+    }
+  };
+
+  const handleStartEditingDescription = () => {
+    setIsEditingDescription(true);
+    setEditedDescription(deck.description || '');
+  };
+
+  const handleSaveDescription = () => {
+    if (editedDescription !== (deck.description || '') && onUpdateDeckDescription) {
+      onUpdateDeckDescription(editedDescription.trim());
+    }
+    setIsEditingDescription(false);
+  };
+
+  const handleCancelDescriptionEdit = () => {
+    setEditedDescription(deck.description || '');
+    setIsEditingDescription(false);
+  };
+
+  const handleDescriptionKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && e.shiftKey === false) {
+      e.preventDefault();
+      handleSaveDescription();
+    } else if (e.key === 'Escape') {
+      handleCancelDescriptionEdit();
     }
   };
 
@@ -417,6 +448,64 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
           >
             <Trash2 size={16} />
           </button>
+        </div>
+        
+        {/* Deck Description */}
+        <div className="mb-3">
+          {isEditingDescription ? (
+            <div className="space-y-2">
+              <textarea
+                value={editedDescription}
+                onChange={(e) => setEditedDescription(e.target.value)}
+                onKeyDown={handleDescriptionKeyPress}
+                className="w-full text-sm text-lorcana-ink bg-lorcana-cream border-2 border-lorcana-gold rounded-sm px-2 py-1 resize-none focus:outline-none focus:ring-2 focus:ring-lorcana-gold"
+                placeholder="Add a description for your deck..."
+                rows={3}
+                maxLength={500}
+                autoFocus
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-lorcana-purple">
+                  {editedDescription.length}/500 characters
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={handleSaveDescription}
+                    className="p-1 text-green-600 hover:bg-green-100 rounded-sm transition-colors"
+                    title="Save description"
+                  >
+                    <Check size={16} />
+                  </button>
+                  <button
+                    onClick={handleCancelDescriptionEdit}
+                    className="p-1 text-red-600 hover:bg-red-100 rounded-sm transition-colors"
+                    title="Cancel editing"
+                  >
+                    <XIcon size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2">
+              <div className="flex-1 min-h-[1.5rem]">
+                {deck.description ? (
+                  <p className="text-sm text-lorcana-navy leading-relaxed">{deck.description}</p>
+                ) : (
+                  <p className="text-sm text-lorcana-purple italic">No description</p>
+                )}
+              </div>
+              {onUpdateDeckDescription && (
+                <button
+                  onClick={handleStartEditingDescription}
+                  className="p-1 text-lorcana-navy hover:bg-lorcana-cream rounded-sm transition-colors flex-shrink-0"
+                  title="Edit description"
+                >
+                  <Edit3 size={14} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Card Count */}
