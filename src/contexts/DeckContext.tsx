@@ -9,12 +9,15 @@ interface DeckContextType {
   decks: Deck[];
   publicDecks: Deck[];
   currentDeck: Deck | null;
+  isEditingDeck: boolean;
   loading: boolean;
   createDeck: (name: string, description?: string) => Promise<string>;
   deleteDeck: (deckId: string) => Promise<void>;
   duplicateDeck: (deckId: string) => Promise<string>;
   updateDeck: (deck: Deck) => Promise<void>;
   setCurrentDeck: (deck: Deck | null) => void;
+  startEditingDeck: (deckId: string) => void;
+  stopEditingDeck: () => void;
   addCardToDeck: (card: LorcanaCard, deckId?: string) => boolean;
   removeCardFromDeck: (cardId: number, deckId?: string) => void;
   updateCardQuantity: (cardId: number, quantity: number, deckId?: string) => void;
@@ -39,6 +42,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [publicDecks, setPublicDecks] = useState<Deck[]>([]);
   const [currentDeck, setCurrentDeck] = useState<Deck | null>(null);
+  const [isEditingDeck, setIsEditingDeck] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Load user's decks when authenticated
@@ -254,6 +258,19 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
     await updateDeck(deck);
   };
 
+  const startEditingDeck = (deckId: string): void => {
+    const deck = decks.find(d => d.id === deckId);
+    if (!deck) return;
+    
+    setCurrentDeck(deck);
+    setIsEditingDeck(true);
+  };
+
+  const stopEditingDeck = (): void => {
+    setIsEditingDeck(false);
+    setCurrentDeck(null);
+  };
+
   const addCardToDeck = (card: LorcanaCard, deckId?: string): boolean => {
     const targetDeck = deckId ? decks.find(d => d.id === deckId) : currentDeck;
     if (!targetDeck) return false;
@@ -303,10 +320,14 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
 
     const inkDistribution: Record<string, number> = {};
     deck.cards.forEach(card => {
-      if (!inkDistribution[card.color]) {
-        inkDistribution[card.color] = 0;
-      }
-      inkDistribution[card.color] += card.quantity;
+      // Split dual-ink colors (e.g., "Amber-Amethyst" -> ["Amber", "Amethyst"])
+      const colors = card.color.includes('-') ? card.color.split('-') : [card.color];
+      colors.forEach(color => {
+        if (!inkDistribution[color]) {
+          inkDistribution[color] = 0;
+        }
+        inkDistribution[color] += card.quantity;
+      });
     });
 
     const validation = validateDeckUtil(deck);
@@ -373,12 +394,15 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
     decks,
     publicDecks,
     currentDeck,
+    isEditingDeck,
     loading,
     createDeck,
     deleteDeck,
     duplicateDeck,
     updateDeck,
     setCurrentDeck,
+    startEditingDeck,
+    stopEditingDeck,
     addCardToDeck,
     removeCardFromDeck,
     updateCardQuantity,

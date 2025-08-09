@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { Plus, Minus } from 'lucide-react';
 import { ConsolidatedCard } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useDeck } from '../contexts/DeckContext';
+import { useCollection } from '../contexts/CollectionContext';
 
 interface ConsolidatedCardProps {
   consolidatedCard: ConsolidatedCard;
@@ -17,12 +19,22 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
   onCardClick
 }) => {
   const { user } = useAuth();
+  const { isEditingDeck, currentDeck, addCardToDeck, removeCardFromDeck, updateCardQuantity } = useDeck();
+  const { getVariantQuantities } = useCollection();
   const { baseCard, hasEnchanted, hasSpecial, enchantedCard } = consolidatedCard;
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [transform, setTransform] = useState('');
   const [lightPosition, setLightPosition] = useState({ x: 50, y: 50 });
   const [showEnchanted, setShowEnchanted] = useState(false);
+  
+  // Get deck quantity for this card
+  const deckQuantity = currentDeck?.cards.find(c => c.id === baseCard.id)?.quantity || 0;
+  
+  // Get total collection quantity
+  const collectionQuantities = getVariantQuantities(consolidatedCard.fullName);
+  const totalCollectionQuantity = collectionQuantities.regular + collectionQuantities.foil + 
+                                  collectionQuantities.enchanted + collectionQuantities.special;
   
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -58,6 +70,32 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
     setTransform('');
     setLightPosition({ x: 50, y: 50 });
     setShowEnchanted(false);
+  };
+  
+  const handleAddToDeck = () => {
+    if (currentDeck) {
+      const totalCards = currentDeck.cards.reduce((sum, c) => sum + c.quantity, 0);
+      if (deckQuantity < 4 && totalCards < 60) {
+        addCardToDeck(baseCard);
+      }
+    }
+  };
+  
+  const handleRemoveFromDeck = () => {
+    if (currentDeck && deckQuantity > 0) {
+      const newQuantity = deckQuantity - 1;
+      if (newQuantity === 0) {
+        removeCardFromDeck(baseCard.id);
+      } else {
+        updateCardQuantity(baseCard.id, newQuantity);
+      }
+    }
+  };
+  
+  const canAddToDeck = () => {
+    if (!currentDeck) return false;
+    const totalCards = currentDeck.cards.reduce((sum, c) => sum + c.quantity, 0);
+    return deckQuantity < 4 && totalCards < 60;
   };
 
   const getVariantBackground = (variantType: 'regular' | 'foil' | 'enchanted' | 'special') => {
@@ -105,6 +143,38 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
           className="p-0.5 rounded text-green-600 hover:text-green-800 transition-colors"
         >
           <Plus size={10} />
+        </button>
+      </div>
+    );
+  };
+  
+  const renderDeckControl = () => {
+    return (
+      <div className="flex items-center justify-between px-2 py-1 bg-lorcana-cream rounded-sm border-2 border-lorcana-gold">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleRemoveFromDeck();
+          }}
+          disabled={deckQuantity <= 0}
+          className="w-6 h-6 flex items-center justify-center text-red-600 hover:text-red-800 hover:bg-red-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors rounded-sm"
+        >
+          <Minus size={12} />
+        </button>
+        
+        <span className="text-sm font-semibold text-lorcana-ink">
+          {deckQuantity}{totalCollectionQuantity > 0 ? `/${Math.min(totalCollectionQuantity, 4)}` : ''}
+        </span>
+        
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAddToDeck();
+          }}
+          disabled={!canAddToDeck()}
+          className="w-6 h-6 flex items-center justify-center text-green-600 hover:text-green-800 hover:bg-green-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors rounded-sm"
+        >
+          <Plus size={12} />
         </button>
       </div>
     );
@@ -186,13 +256,19 @@ const ConsolidatedCardComponent: React.FC<ConsolidatedCardProps> = ({
         
       </div>
 
-      {/* Quantity controls below card - only show when authenticated */}
+      {/* Quantity controls below card - show deck controls in edit mode, collection controls otherwise */}
       {user && (
         <div className="flex justify-center space-x-1">
-          {renderQuantityControl('regular', quantities.regular, consolidatedCard.hasRegular)}
-          {renderQuantityControl('foil', quantities.foil, consolidatedCard.hasFoil)}
-          {hasEnchanted && renderQuantityControl('enchanted', quantities.enchanted, true)}
-          {hasSpecial && renderQuantityControl('special', quantities.special, true)}
+          {isEditingDeck ? (
+            renderDeckControl()
+          ) : (
+            <>
+              {renderQuantityControl('regular', quantities.regular, consolidatedCard.hasRegular)}
+              {renderQuantityControl('foil', quantities.foil, consolidatedCard.hasFoil)}
+              {hasEnchanted && renderQuantityControl('enchanted', quantities.enchanted, true)}
+              {hasSpecial && renderQuantityControl('special', quantities.special, true)}
+            </>
+          )}
         </div>
       )}
     </div>

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, Package, Layers3, User, LogOut } from 'lucide-react';
+import { BookOpen, Package, Layers3, User, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import CardBrowser from './components/CardBrowser';
 import Collection from './components/Collection';
 import MyDecks from './components/MyDecks';
-import DeckBuilder from './components/DeckBuilder';
 import DeckSummary from './components/DeckSummary';
 import LoginModal from './components/LoginModal';
+import DeckPanel from './components/deck/DeckPanel';
 import { CollectionProvider } from './contexts/CollectionContext';
-import { DeckProvider } from './contexts/DeckContext';
+import { DeckProvider, useDeck } from './contexts/DeckContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 function AppContent() {
@@ -17,7 +17,9 @@ function AppContent() {
   const [navVisible, setNavVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { user, signOut, loading } = useAuth();
+  const { isEditingDeck, currentDeck, stopEditingDeck, removeCardFromDeck, updateCardQuantity, updateDeck, validateDeck } = useDeck();
 
   const tabs = [
     { id: '/cards', label: 'Cards', icon: BookOpen },
@@ -32,8 +34,29 @@ function AppContent() {
     return location.pathname.startsWith(path);
   };
 
-  const isDeckPage = location.pathname.includes('/deck/') || location.pathname.includes('/decks/build');
+  const isDeckPage = location.pathname.includes('/deck/');
   const shouldHideNavigation = isDeckPage;
+  
+  const handleClearDeck = () => {
+    if (currentDeck) {
+      updateDeck({
+        ...currentDeck,
+        cards: [],
+        updatedAt: new Date()
+      });
+    }
+  };
+  
+  const handleViewDeck = (deckId?: string) => {
+    if (deckId) {
+      navigate(`/deck/${deckId}`);
+    }
+  };
+  
+  const handleStopEditingDeck = () => {
+    stopEditingDeck();
+    setSidebarCollapsed(false);
+  };
 
   useEffect(() => {
     const controlNavbar = () => {
@@ -64,9 +87,7 @@ function AppContent() {
 
 
   return (
-    <CollectionProvider>
-      <DeckProvider>
-        <div className="min-h-screen bg-lorcana-cream">
+    <div className="min-h-screen bg-lorcana-cream">
           {/* Mobile Header - Full Width */}
           <div className="sm:hidden bg-lorcana-navy shadow-xl border-b-2 border-lorcana-gold">
             <header className="px-4 py-3 flex items-center justify-between">
@@ -212,31 +233,69 @@ function AppContent() {
                 <Route path="/" element={<CardBrowser />} />
                 <Route path="/cards" element={<CardBrowser />} />
                 <Route path="/collection" element={<Collection />} />
-                <Route path="/decks" element={<MyDecks onBuildDeck={(deckId?: string) => navigate(deckId ? `/decks/build/${deckId}` : '/decks/build')} onViewDeck={(deckId: string) => navigate(`/deck/${deckId}`)} />} />
-                <Route path="/decks/build" element={<DeckBuilder onBack={() => navigate('/decks')} onViewDeck={(deckId?: string) => deckId && navigate(`/deck/${deckId}`)} />} />
-                <Route path="/decks/build/:deckId" element={<DeckBuilder onBack={() => navigate('/decks')} onViewDeck={(deckId?: string) => deckId && navigate(`/deck/${deckId}`)} />} />
-                <Route path="/deck/:deckId" element={<DeckSummary onBack={() => navigate('/decks')} onEditDeck={(deckId?: string) => deckId && navigate(`/decks/build/${deckId}`)} />} />
+                <Route path="/decks" element={<MyDecks onBuildDeck={() => {}} onViewDeck={(deckId: string) => navigate(`/deck/${deckId}`)} />} />
+                <Route path="/deck/:deckId" element={<DeckSummary onBack={() => navigate('/decks')} onEditDeck={() => {}} />} />
               </Routes>
             </main>
           </div>
+          
+          {/* Persistent Deck Panel - Shows when editing a deck */}
+          {isEditingDeck && currentDeck && (
+            <>
+              {/* Backdrop when expanded - only on mobile/tablet */}
+              {!sidebarCollapsed && (
+                <div 
+                  className="fixed inset-0 bg-black bg-opacity-30 z-30 lg:hidden"
+                  onClick={() => setSidebarCollapsed(true)}
+                />
+              )}
+              
+              {/* Deck Sidebar */}
+              <div className={`fixed top-0 right-0 h-screen transition-all duration-300 ease-in-out z-40 ${sidebarCollapsed ? 'w-16' : 'w-80'}`}>
+                {/* Collapse/Expand Button */}
+                <button
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-50 w-8 h-12 bg-white border-2 border-lorcana-gold rounded-l-sm shadow-xl hover:bg-lorcana-cream transition-colors flex items-center justify-center"
+                >
+                  {sidebarCollapsed ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                </button>
+                
+                {/* Sidebar Content */}
+                <div className={`h-full transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                  <DeckPanel
+                    deck={currentDeck}
+                    onRemoveCard={removeCardFromDeck}
+                    onUpdateQuantity={updateCardQuantity}
+                    onClearDeck={handleClearDeck}
+                    onViewDeck={handleViewDeck}
+                    onStopEditing={handleStopEditingDeck}
+                    validation={validateDeck(currentDeck)}
+                    isCollapsed={sidebarCollapsed}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+          
+          {/* Login Modal */}
+          <LoginModal
+            isOpen={showLoginModal}
+            onClose={() => setShowLoginModal(false)}
+          />
         </div>
-        
-        {/* Login Modal */}
-        <LoginModal
-          isOpen={showLoginModal}
-          onClose={() => setShowLoginModal(false)}
-        />
-      </DeckProvider>
-    </CollectionProvider>
   );
 }
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <CollectionProvider>
+        <DeckProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </DeckProvider>
+      </CollectionProvider>
     </AuthProvider>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit3 } from 'lucide-react';
 import { useDeck } from '../contexts/DeckContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,8 +12,9 @@ interface DeckSummaryProps {
 
 const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
   const { deckId } = useParams<{ deckId: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const { currentDeck, decks, publicDecks, setCurrentDeck, getDeckSummary, loadPublicDecks } = useDeck();
+  const { currentDeck, decks, publicDecks, setCurrentDeck, startEditingDeck, getDeckSummary, loadPublicDecks } = useDeck();
   
   // Load public decks if not authenticated
   useEffect(() => {
@@ -107,7 +108,10 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
             </button>
             {user && currentDeck.userId === user.id && (
               <button
-                onClick={() => onEditDeck(currentDeck.id)}
+                onClick={() => {
+                  startEditingDeck(currentDeck.id);
+                  navigate('/cards');
+                }}
               className="btn-lorcana-navy flex items-center space-x-2"
             >
                 <Edit3 size={16} />
@@ -181,7 +185,10 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
             <p className="text-lorcana-navy mb-6">This deck doesn't have any cards yet.</p>
             {user && currentDeck.userId === user.id && (
               <button
-                onClick={() => onEditDeck(currentDeck.id)}
+                onClick={() => {
+                  startEditingDeck(currentDeck.id);
+                  navigate('/cards');
+                }}
                 className="btn-lorcana-navy px-6 py-3"
               >
                 Start Building

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Upload, Search, Globe, Lock, Copy, Trash2, Edit, Eye } from 'lucide-react';
 import { useDeck } from '../contexts/DeckContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +11,7 @@ interface MyDecksProps {
 }
 
 const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { 
     decks, 
@@ -22,6 +24,7 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
     exportDeck, 
     importDeck, 
     setCurrentDeck,
+    startEditingDeck,
     publishDeck,
     unpublishDeck,
     loadPublicDecks
@@ -410,8 +413,8 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
                     summary={summary}
                     onView={() => onViewDeck(deck.id)}
                     onEdit={() => {
-                      setCurrentDeck(deck);
-                      onBuildDeck(deck.id);
+                      startEditingDeck(deck.id);
+                      navigate('/cards');
                     }}
                     onDuplicate={() => handleDuplicateDeck(deck.id)}
                     onDelete={() => handleDeleteDeck(deck.id)}

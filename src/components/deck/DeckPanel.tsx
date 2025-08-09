@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, Minus, Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { Trash2, Minus, Plus, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { Deck } from '../../types';
 import { useCollection } from '../../contexts/CollectionContext';
 import { COLOR_ICONS } from '../../constants/icons';
@@ -10,6 +10,7 @@ interface DeckPanelProps {
   onUpdateQuantity: (cardId: number, quantity: number) => void;
   onClearDeck: () => void;
   onViewDeck?: (deckId?: string) => void;
+  onStopEditing?: () => void;
   validation: { isValid: boolean; errors: string[] };
   isCollapsed?: boolean;
 }
@@ -20,6 +21,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
   onUpdateQuantity,
   onClearDeck,
   onViewDeck,
+  onStopEditing,
   validation,
   isCollapsed = false
 }) => {
@@ -319,7 +321,18 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
         {/* Header */}
       <div className="p-4 border-b-2 border-lorcana-gold flex-shrink-0">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-semibold text-lorcana-ink">Deck Contents</h3>
+          <div className="flex items-center gap-2">
+            {onStopEditing && (
+              <button
+                onClick={onStopEditing}
+                className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-sm transition-colors flex items-center justify-center"
+                title="Stop editing deck"
+              >
+                <X size={14} />
+              </button>
+            )}
+            <h3 className="text-lg font-semibold text-lorcana-ink">Deck Contents</h3>
+          </div>
           <button
             onClick={onClearDeck}
             className="p-2 text-red-600 hover:bg-red-100 rounded-sm transition-colors"
