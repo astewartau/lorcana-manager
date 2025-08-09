@@ -1,6 +1,7 @@
 import React from 'react';
 import { ConsolidatedCard } from '../../types';
 import ConsolidatedCardComponent from '../ConsolidatedCard';
+import { useDynamicGrid } from '../../hooks';
 
 interface CardGridViewProps {
   cards: ConsolidatedCard[];
@@ -20,12 +21,18 @@ const CardGridView: React.FC<CardGridViewProps> = ({
   getVariantQuantities,
   onCardClick
 }) => {
+  const { containerRef, gridStyle } = useDynamicGrid();
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4 pb-8">
+    <div 
+      ref={containerRef}
+      className="pb-8"
+      style={gridStyle}
+    >
       {cards.map((consolidatedCard) => {
         const quantities = getVariantQuantities(consolidatedCard.fullName);
         return (
-          <div key={consolidatedCard.baseCard.id} className="relative mb-3">
+          <div key={consolidatedCard.baseCard.id} className="relative">
             <ConsolidatedCardComponent
               consolidatedCard={consolidatedCard}
               quantities={quantities}

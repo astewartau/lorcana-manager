@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Upload, Search, Globe, Lock, Copy, Trash2, Edit, Eye } from 'lucide-react';
+import { Plus, Upload, Search, Globe, Lock, Copy, Trash2, Edit, Eye, User } from 'lucide-react';
 import { useDeck } from '../contexts/DeckContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useProfile } from '../contexts/ProfileContext';
+import { Deck } from '../types';
 import DeckBox3D from './DeckBox3D';
 
 interface MyDecksProps {
@@ -13,6 +15,7 @@ interface MyDecksProps {
 const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { loadUserProfile } = useProfile();
   const { 
     decks, 
     publicDecks, 
@@ -36,14 +39,31 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
   const [newDeckDescription, setNewDeckDescription] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [deckProfiles, setDeckProfiles] = useState<Record<string, string>>({});
+
+  // Load display names for deck authors
+  const loadDeckProfiles = useCallback(async (decks: Deck[]) => {
+    const profiles: Record<string, string> = {};
+    
+    for (const deck of decks) {
+      if (deck.userId && !profiles[deck.userId]) {
+        const profile = await loadUserProfile(deck.userId);
+        if (profile) {
+          profiles[deck.userId] = profile.displayName;
+        }
+      }
+    }
+    
+    setDeckProfiles(prev => ({ ...prev, ...profiles }));
+  }, [loadUserProfile]);
 
   // Load public decks when tab changes or search changes (authenticated users)
   useEffect(() => {
     if (user && activeTab === 'public') {
       if (searchTimeout) clearTimeout(searchTimeout);
       
-      const timeout = setTimeout(() => {
-        loadPublicDecks(searchTerm);
+      const timeout = setTimeout(async () => {
+        await loadPublicDecks(searchTerm);
       }, 500);
       
       setSearchTimeout(timeout);
@@ -59,8 +79,8 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
     if (!user) {
       if (searchTimeout) clearTimeout(searchTimeout);
       
-      const timeout = setTimeout(() => {
-        loadPublicDecks(searchTerm);
+      const timeout = setTimeout(async () => {
+        await loadPublicDecks(searchTerm);
       }, 500);
       
       setSearchTimeout(timeout);
@@ -70,6 +90,13 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
       };
     }
   }, [user, searchTerm]);
+
+  // Load profile display names when public decks change
+  useEffect(() => {
+    if (publicDecks.length > 0) {
+      loadDeckProfiles(publicDecks);
+    }
+  }, [publicDecks, loadDeckProfiles]);
 
   const handleCreateDeck = async () => {
     if (!newDeckName.trim()) return;
@@ -163,6 +190,16 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
     input.click();
   };
 
+  const handleViewProfile = async (userId: string) => {
+    if (!userId) return;
+    
+    // Check if user has a public profile
+    const profile = await loadUserProfile(userId);
+    if (profile && profile.isPublic) {
+      navigate(`/users/${userId}`);
+    }
+  };
+
   // If not signed in, show only Published Decks tab
   if (!user) {
     return (
@@ -224,9 +261,20 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
                 <div key={deck.id} className="card-lorcana p-6">
                   <div className="mb-4">
                     <h3 className="text-lg font-bold text-lorcana-ink">{deck.name}</h3>
-                    <p className="text-xs text-lorcana-navy mt-1">
-                      by {deck.authorEmail || 'Unknown'}
-                    </p>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <p className="text-xs text-lorcana-navy">by</p>
+                      {deck.userId ? (
+                        <button
+                          onClick={() => handleViewProfile(deck.userId!)}
+                          className="flex items-center space-x-1 text-xs text-lorcana-gold hover:text-lorcana-navy hover:underline transition-colors"
+                        >
+                          <User size={12} />
+                          <span>{deckProfiles[deck.userId!] || deck.authorEmail || 'Unknown'}</span>
+                        </button>
+                      ) : (
+                        <span className="text-xs text-lorcana-navy">{deck.authorEmail || 'Unknown'}</span>
+                      )}
+                    </div>
                   </div>
                   
                   {deck.description && (
@@ -524,9 +572,20 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
                 <div key={deck.id} className="card-lorcana p-6">
                   <div className="mb-4">
                     <h3 className="text-lg font-bold text-lorcana-ink">{deck.name}</h3>
-                    <p className="text-xs text-lorcana-navy mt-1">
-                      by {deck.authorEmail || 'Unknown'}
-                    </p>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <p className="text-xs text-lorcana-navy">by</p>
+                      {deck.userId ? (
+                        <button
+                          onClick={() => handleViewProfile(deck.userId!)}
+                          className="flex items-center space-x-1 text-xs text-lorcana-gold hover:text-lorcana-navy hover:underline transition-colors"
+                        >
+                          <User size={12} />
+                          <span>{deckProfiles[deck.userId!] || deck.authorEmail || 'Unknown'}</span>
+                        </button>
+                      ) : (
+                        <span className="text-xs text-lorcana-navy">{deck.authorEmail || 'Unknown'}</span>
+                      )}
+                    </div>
                   </div>
                   
                   {deck.description && (

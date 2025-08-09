@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit3 } from 'lucide-react';
+import { ArrowLeft, Edit3, User } from 'lucide-react';
 import { useDeck } from '../contexts/DeckContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useProfile } from '../contexts/ProfileContext';
 import { COLOR_ICONS } from '../constants/icons';
 
 interface DeckSummaryProps {
@@ -14,7 +15,22 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
   const { deckId } = useParams<{ deckId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { loadUserProfile } = useProfile();
   const { currentDeck, decks, publicDecks, setCurrentDeck, startEditingDeck, getDeckSummary, loadPublicDecks } = useDeck();
+  const [authorDisplayName, setAuthorDisplayName] = useState<string>('');
+  
+  // Load author profile when deck changes
+  useEffect(() => {
+    if (currentDeck?.userId && currentDeck.userId !== user?.id) {
+      loadUserProfile(currentDeck.userId).then(profile => {
+        if (profile) {
+          setAuthorDisplayName(profile.displayName);
+        }
+      });
+    } else {
+      setAuthorDisplayName('');
+    }
+  }, [currentDeck, user, loadUserProfile]);
   
   // Load public decks if not authenticated
   useEffect(() => {
@@ -71,11 +87,20 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
     ? (currentDeck.cards.reduce((sum, card) => sum + (card.cost * card.quantity), 0) / totalCards).toFixed(1)
     : '0';
 
-  // Group cards by unique card (combining all copies)
-  const uniqueCards = currentDeck.cards.map(card => ({
-    ...card,
-    // We'll use the card data as is since it already has quantity
-  }));
+  // Group cards by unique card (combining all copies) and sort by cost
+  const uniqueCards = currentDeck.cards
+    .map(card => ({
+      ...card,
+      // We'll use the card data as is since it already has quantity
+    }))
+    .sort((a, b) => {
+      // Primary sort: by ink cost (ascending)
+      if (a.cost !== b.cost) {
+        return a.cost - b.cost;
+      }
+      // Secondary sort: by name (alphabetical) for cards with same cost
+      return a.name.localeCompare(b.name);
+    });
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -86,6 +111,16 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleViewProfile = async (userId: string) => {
+    if (!userId) return;
+    
+    // Check if user has a public profile
+    const profile = await loadUserProfile(userId);
+    if (profile && profile.isPublic) {
+      navigate(`/users/${userId}`);
+    }
   };
 
   // Get ink colors for display (now includes individual colors from dual-ink cards)
@@ -124,6 +159,21 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h1 className="text-3xl font-bold text-lorcana-ink mb-2">{currentDeck.name}</h1>
+                
+                {/* Author info for public decks */}
+                {currentDeck.userId && currentDeck.userId !== user?.id && (
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="text-sm text-lorcana-navy">by</span>
+                    <button
+                      onClick={() => handleViewProfile(currentDeck.userId!)}
+                      className="flex items-center space-x-1 text-sm text-lorcana-gold hover:text-lorcana-navy hover:underline transition-colors"
+                    >
+                      <User size={14} />
+                      <span>{authorDisplayName || currentDeck.authorEmail || 'Unknown Author'}</span>
+                    </button>
+                  </div>
+                )}
+                
                 {currentDeck.description && (
                   <p className="text-lorcana-navy mb-4">{currentDeck.description}</p>
                 )}

@@ -81,6 +81,19 @@ export interface DeckSummary {
   updatedAt: Date;
 }
 
+export interface UserProfile {
+  id: string;
+  userId: string;
+  displayName: string;
+  fullName?: string;
+  location?: string;
+  bio?: string;
+  avatarUrl?: string;
+  isPublic: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 
 export interface FilterOptions {
   search: string;

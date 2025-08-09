@@ -1,6 +1,7 @@
 import React from 'react';
 import { ConsolidatedCard } from '../../types';
 import DeckBuilderCard from './DeckBuilderCard';
+import { useDynamicGrid } from '../../hooks';
 
 interface DeckBuilderCardGridProps {
   cards: ConsolidatedCard[];
@@ -19,8 +20,13 @@ const DeckBuilderCardGrid: React.FC<DeckBuilderCardGridProps> = ({
   onRemoveCard,
   canAddCard
 }) => {
+  const { containerRef, gridStyle } = useDynamicGrid();
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+    <div 
+      ref={containerRef}
+      style={gridStyle}
+    >
       {cards.map((consolidatedCard) => {
         const deckQuantity = getCardQuantityInDeck(consolidatedCard.baseCard.id);
         const collectionQuantity = getCollectionQuantity(consolidatedCard);

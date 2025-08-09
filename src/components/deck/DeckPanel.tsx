@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Trash2, Minus, Plus, ChevronDown, ChevronRight, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trash2, Minus, Plus, ChevronDown, ChevronRight, X, Edit3, Check, X as XIcon } from 'lucide-react';
 import { Deck } from '../../types';
 import { useCollection } from '../../contexts/CollectionContext';
 import { COLOR_ICONS } from '../../constants/icons';
@@ -11,6 +11,7 @@ interface DeckPanelProps {
   onClearDeck: () => void;
   onViewDeck?: (deckId?: string) => void;
   onStopEditing?: () => void;
+  onUpdateDeckName?: (name: string) => void;
   validation: { isValid: boolean; errors: string[] };
   isCollapsed?: boolean;
 }
@@ -22,6 +23,7 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
   onClearDeck,
   onViewDeck,
   onStopEditing,
+  onUpdateDeckName,
   validation,
   isCollapsed = false
 }) => {
@@ -35,6 +37,39 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
     y: number;
     imageUrl: string;
   }>({ show: false, x: 0, y: 0, imageUrl: '' });
+  
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(deck.name);
+
+  // Update editedName when deck changes
+  useEffect(() => {
+    setEditedName(deck.name);
+  }, [deck.name]);
+
+  const handleStartEditingName = () => {
+    setIsEditingName(true);
+    setEditedName(deck.name);
+  };
+
+  const handleSaveName = () => {
+    if (editedName.trim() && editedName.trim() !== deck.name && onUpdateDeckName) {
+      onUpdateDeckName(editedName.trim());
+    }
+    setIsEditingName(false);
+  };
+
+  const handleCancelNameEdit = () => {
+    setEditedName(deck.name);
+    setIsEditingName(false);
+  };
+
+  const handleNameKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveName();
+    } else if (e.key === 'Escape') {
+      handleCancelNameEdit();
+    }
+  };
 
   const totalCards = deck.cards.reduce((sum, card) => sum + card.quantity, 0);
 
@@ -331,7 +366,49 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
                 <X size={14} />
               </button>
             )}
-            <h3 className="text-lg font-semibold text-lorcana-ink">Deck Contents</h3>
+            {/* Editable deck name */}
+            <div className="flex items-center gap-2 flex-1">
+              {isEditingName ? (
+                <div className="flex items-center gap-1 flex-1">
+                  <input
+                    type="text"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    onKeyDown={handleNameKeyPress}
+                    className="text-lg font-semibold text-lorcana-ink bg-lorcana-cream border-2 border-lorcana-gold rounded-sm px-2 py-1 flex-1 focus:outline-none focus:ring-2 focus:ring-lorcana-gold"
+                    autoFocus
+                    maxLength={50}
+                  />
+                  <button
+                    onClick={handleSaveName}
+                    className="p-1 text-green-600 hover:bg-green-100 rounded-sm transition-colors"
+                    title="Save deck name"
+                  >
+                    <Check size={16} />
+                  </button>
+                  <button
+                    onClick={handleCancelNameEdit}
+                    className="p-1 text-red-600 hover:bg-red-100 rounded-sm transition-colors"
+                    title="Cancel editing"
+                  >
+                    <XIcon size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 flex-1">
+                  <h3 className="text-lg font-semibold text-lorcana-ink truncate">{deck.name}</h3>
+                  {onUpdateDeckName && (
+                    <button
+                      onClick={handleStartEditingName}
+                      className="p-1 text-lorcana-navy hover:bg-lorcana-cream rounded-sm transition-colors"
+                      title="Edit deck name"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <button
             onClick={onClearDeck}
