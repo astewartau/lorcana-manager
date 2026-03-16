@@ -76,15 +76,24 @@ export const Modal: React.FC<ModalProps> = ({
     }
   }, []);
 
-  // Set up event listeners and focus management
+  // Set up event listeners
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keydown', handleTabKey);
+
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keydown', handleTabKey);
+      };
+    }
+  }, [isOpen, handleKeyDown, handleTabKey]);
+
+  // Focus management and body scroll - only runs when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       // Store currently focused element
       previousActiveElement.current = document.activeElement as HTMLElement;
-
-      // Add event listeners
-      document.addEventListener('keydown', handleKeyDown);
-      document.addEventListener('keydown', handleTabKey);
 
       // Focus first focusable element in modal
       setTimeout(() => {
@@ -98,15 +107,12 @@ export const Modal: React.FC<ModalProps> = ({
       document.body.style.overflow = 'hidden';
 
       return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        document.removeEventListener('keydown', handleTabKey);
         document.body.style.overflow = '';
-
         // Restore focus
         previousActiveElement.current?.focus();
       };
     }
-  }, [isOpen, handleKeyDown, handleTabKey]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
