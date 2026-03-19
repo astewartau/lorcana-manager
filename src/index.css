@@ -355,3 +355,116 @@
 .animate-slide-in {
   animation: slideIn 0.3s ease-out;
 }
+
+/* Print Styles */
+@media print {
+  /* Hide the app, show only print content */
+  #root {
+    display: none !important;
+  }
+
+  #print-root {
+    display: block !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    margin: 0;
+    padding: 0;
+  }
+
+  .print-deck-header {
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #333;
+    padding-bottom: 10px;
+  }
+
+  .print-deck-header h1 {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0 0 4px 0;
+  }
+
+  .print-deck-description {
+    font-size: 12px;
+    color: #555;
+    margin: 4px 0;
+  }
+
+  .print-deck-meta {
+    font-size: 11px;
+    color: #666;
+    margin: 2px 0;
+  }
+
+  .print-card-list {
+    columns: 2;
+    column-gap: 24px;
+    font-size: 11px;
+    padding: 0 10px;
+  }
+
+  .print-group {
+    break-inside: avoid;
+    margin-bottom: 12px;
+  }
+
+  .print-group-header {
+    font-weight: bold;
+    font-size: 13px;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 4px;
+    padding-bottom: 2px;
+  }
+
+  .print-card-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1px 0;
+    gap: 8px;
+  }
+
+  .print-card-info {
+    color: #666;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .print-image-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .print-card-image {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    text-align: center;
+  }
+
+  .print-card-image img {
+    width: 100%;
+    height: auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .print-card-qty {
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 2px;
+  }
+}
+
+/* Screen: hide print container */
+@media screen {
+  #print-root {
+    display: none !important;
+  }
+}

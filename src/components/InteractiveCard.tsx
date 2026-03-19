@@ -140,10 +140,10 @@ const InteractiveCard: React.FC<CardProps> = ({
     const showNormalControls = canHaveNormal(card.rarity);
 
     return (
-      <div className="flex space-x-2">
+      <div className="flex space-x-1 sm:space-x-2">
         {/* Normal quantity control (only for cards that have normal versions) */}
         {showNormalControls && (
-          <div className="flex items-center justify-between px-2 py-1 bg-lorcana-cream rounded-sm border-2 border-lorcana-gold">
+          <div className="flex items-center justify-between px-1.5 sm:px-2 py-1 bg-lorcana-cream rounded-sm border-2 border-lorcana-gold">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -155,7 +155,7 @@ const InteractiveCard: React.FC<CardProps> = ({
             >
               <Minus size={14} />
             </button>
-            <span className="text-sm font-semibold text-lorcana-ink px-2">
+            <span className="text-sm font-semibold text-lorcana-ink px-1 sm:px-2">
               {quantities.normal}
             </span>
             <button
@@ -172,7 +172,7 @@ const InteractiveCard: React.FC<CardProps> = ({
         )}
 
         {/* Foil quantity control - with shimmer effect */}
-        <div className="flex items-center justify-between px-2 py-1 bg-gradient-to-r from-purple-100 via-pink-100 to-blue-100 rounded-sm border-2 border-purple-400 relative overflow-hidden">
+        <div className="flex items-center justify-between px-1.5 sm:px-2 py-1 bg-gradient-to-r from-purple-100 via-pink-100 to-blue-100 rounded-sm border-2 border-purple-400 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 animate-shimmer pointer-events-none" style={{ animationDuration: '3s' }} />
           <button
             onClick={(e) => {
@@ -185,7 +185,7 @@ const InteractiveCard: React.FC<CardProps> = ({
           >
             <Minus size={14} />
           </button>
-          <span className="text-sm font-semibold text-purple-800 px-2 relative z-10">
+          <span className="text-sm font-semibold text-purple-800 px-1 sm:px-2 relative z-10">
             {quantities.foil}
           </span>
           <button

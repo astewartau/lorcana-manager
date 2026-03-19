@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { Deck, LorcanaCard, DeckSummary, DeckCardEntry } from '../types';
 import { validateDeck as validateDeckUtil } from '../utils/deckValidation';
 import { supabase, UserDeck, TABLES } from '../lib/supabase';
@@ -17,6 +17,7 @@ function convertSupabaseDeck(d: any, authorEmail?: string): Deck {
       cardId: c.id || c.cardId,
       quantity: c.quantity
     })),
+    tags: d.tags || [],
     avatar: d.avatar,
     createdAt: new Date(d.created_at),
     updatedAt: new Date(d.updated_at),
@@ -53,6 +54,7 @@ interface DeckContextType {
   publishDeck: (deckId: string) => Promise<void>;
   unpublishDeck: (deckId: string) => Promise<void>;
   loadPublicDecks: (searchTerm?: string) => Promise<void>;
+  allUserTags: string[];
 }
 
 const DeckContext = createContext<DeckContextType | undefined>(undefined);
@@ -108,18 +110,24 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
   const loadPublicDecks = async (searchTerm?: string) => {
     setLoading(true);
     try {
-      let query = supabase
-        .from(TABLES.USER_DECKS)
-        .select('*')
-        .eq('is_public', true)
-        .order('updated_at', { ascending: false })
-        .limit(50);
+      let data: any[] | null = null;
+      let error: any = null;
 
       if (searchTerm) {
-        query = query.ilike('name', `%${searchTerm}%`);
+        // Use RPC function to search across name, description, and tags
+        const result = await supabase.rpc('search_public_decks', { search_term: searchTerm });
+        data = result.data;
+        error = result.error;
+      } else {
+        const result = await supabase
+          .from(TABLES.USER_DECKS)
+          .select('*')
+          .eq('is_public', true)
+          .order('updated_at', { ascending: false })
+          .limit(50);
+        data = result.data;
+        error = result.error;
       }
-
-      const { data, error } = await query;
 
       if (error) {
         console.error('Error loading public decks:', error);
@@ -137,12 +145,13 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
 
   const createDeck = async (name: string, description?: string): Promise<string> => {
     if (!user) throw new Error('Authentication required');
-    
+
     const newDeck: Deck = {
       id: uuidv4(),
       name,
       description,
       cards: [],
+      tags: [],
       createdAt: new Date(),
       updatedAt: new Date(),
       isPublic: false,
@@ -159,6 +168,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
           name: newDeck.name,
           description: newDeck.description,
           cards: newDeck.cards,
+          tags: newDeck.tags,
           avatar: newDeck.avatar,
           is_public: false
         });
@@ -178,14 +188,15 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
 
   const createDeckAndStartEditing = async (name: string, description?: string, initialCard?: LorcanaCard): Promise<Deck> => {
     if (!user) throw new Error('Authentication required');
-    
+
     const initialCards: DeckCardEntry[] = initialCard ? [{ cardId: initialCard.id, quantity: 1 }] : [];
-    
+
     const newDeck: Deck = {
       id: uuidv4(),
       name,
       description,
       cards: initialCards,
+      tags: [],
       createdAt: new Date(),
       updatedAt: new Date(),
       isPublic: false,
@@ -202,6 +213,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
           name: newDeck.name,
           description: newDeck.description,
           cards: newDeck.cards,
+          tags: newDeck.tags,
           avatar: newDeck.avatar,
           is_public: false
         });
@@ -231,6 +243,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
           name: deck.name,
           description: deck.description,
           cards: deck.cards,
+          tags: deck.tags || [],
           avatar: deck.avatar,
           is_public: deck.isPublic || false,
           updated_at: new Date().toISOString()
@@ -289,8 +302,9 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
       id: uuidv4(),
       name: newName,
       description: deckToDuplicate.description,
-      cards: [...deckToDuplicate.cards], // Copy all cards
-      avatar: deckToDuplicate.avatar ? { ...deckToDuplicate.avatar } : undefined, // Copy avatar if it exists
+      cards: [...deckToDuplicate.cards],
+      tags: [...(deckToDuplicate.tags || [])],
+      avatar: deckToDuplicate.avatar ? { ...deckToDuplicate.avatar } : undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
       isPublic: false,
@@ -307,6 +321,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
           name: newDeck.name,
           description: newDeck.description,
           cards: newDeck.cards,
+          tags: newDeck.tags,
           avatar: newDeck.avatar,
           is_public: false
         });
@@ -469,6 +484,15 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
     updateDeck(updatedDeck);
   };
 
+  // Compute unique sorted tags across all user decks for autocomplete
+  const allUserTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    decks.forEach(deck => {
+      (deck.tags || []).forEach(tag => tagSet.add(tag));
+    });
+    return Array.from(tagSet).sort();
+  }, [decks]);
+
   const getDeckSummary = (deckId: string): DeckSummary | null => {
     const deck = decks.find(d => d.id === deckId) || publicDecks.find(d => d.id === deckId);
     if (!deck) return null;
@@ -517,6 +541,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
     const deckData = {
       name: deck.name,
       description: deck.description,
+      tags: deck.tags || [],
       cards: deck.cards.map(entry => {
         const card = allCards.find(c => c.id === entry.cardId);
         return {
@@ -542,7 +567,8 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
         id: uuidv4(),
         name: parsed.name,
         description: parsed.description,
-        cards: parsed.cards, // Already in correct format from parser
+        cards: parsed.cards,
+        tags: parsed.tags || [],
         createdAt: new Date(),
         updatedAt: new Date(),
         isPublic: false,
@@ -559,6 +585,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
           name: newDeck.name,
           description: newDeck.description,
           cards: newDeck.cards,
+          tags: newDeck.tags,
           avatar: newDeck.avatar,
           is_public: false
         });
@@ -604,7 +631,8 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
     importDeck,
     publishDeck,
     unpublishDeck,
-    loadPublicDecks
+    loadPublicDecks,
+    allUserTags
   };
 
   return <DeckContext.Provider value={value}>{children}</DeckContext.Provider>;

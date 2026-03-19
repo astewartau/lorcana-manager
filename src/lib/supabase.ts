@@ -53,6 +53,7 @@ export interface UserDeck {
       scale: number
     }
   }
+  tags?: string[]
   is_public: boolean
   created_at: string
   updated_at: string

@@ -52,6 +52,7 @@ export interface Deck {
   name: string;
   description?: string;
   cards: DeckCardEntry[];
+  tags?: string[];
   createdAt: Date;
   updatedAt: Date;
   isPublic?: boolean;

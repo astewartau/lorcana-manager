@@ -171,6 +171,20 @@ const PublishedDeckCard: React.FC<PublishedDeckCardProps> = ({
           <p className="text-sm text-lorcana-navy line-clamp-2">{deck.description}</p>
         )}
 
+        {/* Tags */}
+        {deck.tags && deck.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {deck.tags.map(tag => (
+              <span
+                key={tag}
+                className="text-xs bg-lorcana-navy text-lorcana-gold px-2 py-0.5 rounded-sm"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Collection coverage and last updated */}
         <div className="flex items-center justify-between mt-2">
           <div className={`text-xs font-medium px-2 py-1 rounded ${

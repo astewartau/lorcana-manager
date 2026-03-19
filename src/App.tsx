@@ -40,11 +40,11 @@ function AppContent() {
   const avatarModal = useModal();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { userProfile, createOrUpdateProfile } = useProfile();
-  const { isEditingDeck, currentDeck, stopEditingDeck, removeCardFromDeck, updateCardQuantity, updateDeck, validateDeck, deleteDeck } = useDeck();
+  const { isEditingDeck, currentDeck, stopEditingDeck, removeCardFromDeck, updateCardQuantity, updateDeck, validateDeck, deleteDeck, allUserTags } = useDeck();
 
 
-  // Don't hide navigation - show it on all pages including individual deck and user profile pages
-  const shouldHideNavigation = false;
+  // Hide mobile navigation when deck sidebar is expanded
+  const shouldHideNavigation = isEditingDeck && !sidebarCollapsed;
   
   const handleDeleteDeck = async () => {
     if (currentDeck) {
@@ -84,6 +84,16 @@ function AppContent() {
       updateDeck({
         ...currentDeck,
         description,
+        updatedAt: new Date()
+      });
+    }
+  };
+
+  const handleUpdateDeckTags = (tags: string[]) => {
+    if (currentDeck) {
+      updateDeck({
+        ...currentDeck,
+        tags,
         updatedAt: new Date()
       });
     }
@@ -251,6 +261,8 @@ function AppContent() {
             onStopEditing={handleStopEditingDeck}
             onUpdateDeckName={handleUpdateDeckName}
             onUpdateDeckDescription={handleUpdateDeckDescription}
+            onUpdateDeckTags={handleUpdateDeckTags}
+            allUserTags={allUserTags}
             deckValidation={currentDeck ? validateDeck(currentDeck) : { isValid: false, errors: [] }}
           />
 

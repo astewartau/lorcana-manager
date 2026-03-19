@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Edit3, User, ExternalLink, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Edit3, User, ExternalLink, Copy, Check, Printer } from 'lucide-react';
 import { Deck, DeckSummary } from '../../types';
 import { COLOR_ICONS } from '../../constants/icons';
 import { DECK_RULES } from '../../constants';
@@ -16,6 +16,7 @@ interface DeckHeaderProps {
   onExportToInktable: () => void;
   onCopyInktableUrl: () => void;
   onEditDeck: () => void;
+  onPrint?: (mode: 'text' | 'images') => void;
   getCardImageUrl: (cardId: number) => string;
   onViewProfile: (userId: string) => void;
 }
@@ -32,6 +33,7 @@ const DeckHeader: React.FC<DeckHeaderProps> = ({
   onExportToInktable,
   onCopyInktableUrl,
   onEditDeck,
+  onPrint,
   getCardImageUrl,
   onViewProfile
 }) => {
@@ -129,6 +131,31 @@ const DeckHeader: React.FC<DeckHeaderProps> = ({
           </>
         )}
       </button>
+      {onPrint && (
+        <div className={`relative group ${stacked ? 'w-full' : ''}`}>
+          <button
+            className={`btn-lorcana-navy flex items-center ${stacked ? 'justify-center w-full' : ''} space-x-2`}
+            title="Print deck"
+          >
+            <Printer size={16} />
+            <span>Print</span>
+          </button>
+          <div className="absolute right-0 mt-1 bg-white border-2 border-lorcana-gold rounded-sm shadow-lg hidden group-hover:block group-focus-within:block z-10 min-w-[180px]">
+            <button
+              onClick={() => onPrint('text')}
+              className="block w-full text-left px-4 py-2 text-sm text-lorcana-ink hover:bg-lorcana-cream transition-colors"
+            >
+              Print as Text List
+            </button>
+            <button
+              onClick={() => onPrint('images')}
+              className="block w-full text-left px-4 py-2 text-sm text-lorcana-ink hover:bg-lorcana-cream transition-colors"
+            >
+              Print with Card Images
+            </button>
+          </div>
+        </div>
+      )}
       {isOwner && (
         <button
           onClick={onEditDeck}
@@ -164,6 +191,20 @@ const DeckHeader: React.FC<DeckHeaderProps> = ({
 
       {deck.description && (
         <p className={`text-lorcana-navy mb-4 ${compact ? 'text-sm' : ''}`}>{deck.description}</p>
+      )}
+
+      {/* Tags */}
+      {deck.tags && deck.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-3">
+          {deck.tags.map(tag => (
+            <span
+              key={tag}
+              className="text-xs bg-lorcana-navy text-lorcana-gold px-2 py-0.5 rounded-sm"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
       )}
 
       <div className={`flex flex-wrap items-center gap-${compact ? '3' : '4'} text-sm text-lorcana-purple`}>

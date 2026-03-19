@@ -157,6 +157,20 @@ const DeckCard: React.FC<DeckCardProps> = ({
         {deck.description && (
           <p className="text-sm text-lorcana-navy line-clamp-2">{deck.description}</p>
         )}
+
+        {/* Tags */}
+        {deck.tags && deck.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {deck.tags.map(tag => (
+              <span
+                key={tag}
+                className="text-xs bg-lorcana-navy text-lorcana-gold px-2 py-0.5 rounded-sm"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Action buttons */}

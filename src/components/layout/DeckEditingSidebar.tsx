@@ -15,6 +15,8 @@ interface DeckEditingSidebarProps {
   onStopEditing: () => void;
   onUpdateDeckName: (name: string) => void;
   onUpdateDeckDescription: (description: string) => void;
+  onUpdateDeckTags: (tags: string[]) => void;
+  allUserTags?: string[];
   deckValidation: { isValid: boolean; errors: string[] };
 }
 
@@ -30,6 +32,8 @@ const DeckEditingSidebar: React.FC<DeckEditingSidebarProps> = ({
   onStopEditing,
   onUpdateDeckName,
   onUpdateDeckDescription,
+  onUpdateDeckTags,
+  allUserTags,
   deckValidation
 }) => {
   if (!isEditingDeck || !currentDeck) {
@@ -66,7 +70,7 @@ const DeckEditingSidebar: React.FC<DeckEditingSidebarProps> = ({
       )}
       
       {/* Deck Sidebar */}
-      <div className={`fixed top-0 right-0 h-screen transition-all duration-300 ease-in-out z-30 ${sidebarCollapsed ? 'w-16' : 'w-80'}`}>
+      <div className={`fixed top-0 right-0 h-screen transition-all duration-300 ease-in-out z-30 ${sidebarCollapsed ? 'w-16 pointer-events-none sm:pointer-events-auto' : 'w-80'}`}>
         {/* Desktop Collapse/Expand Button - hidden on mobile */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -86,6 +90,8 @@ const DeckEditingSidebar: React.FC<DeckEditingSidebarProps> = ({
             onStopEditing={onStopEditing}
             onUpdateDeckName={onUpdateDeckName}
             onUpdateDeckDescription={onUpdateDeckDescription}
+            onUpdateDeckTags={onUpdateDeckTags}
+            allUserTags={allUserTags}
             validation={deckValidation}
             isCollapsed={sidebarCollapsed}
           />

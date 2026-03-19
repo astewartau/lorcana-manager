@@ -10,6 +10,7 @@ import { DECK_RULES } from '../constants';
 import CardImage from './CardImage';
 import DeckStatistics from './deck/DeckStatistics';
 import DeckHeader from './deck/DeckHeader';
+import DeckPrintView from './deck/DeckPrintView';
 import CardPhotoSwipe from './CardPhotoSwipe';
 import { LorcanaCard } from '../types';
 import { exportToInktable, copyInktableUrl, validateInktableExport } from '../utils/inktableExport';
@@ -35,6 +36,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
   });
   const [isPhotoSwipeOpen, setIsPhotoSwipeOpen] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [printMode, setPrintMode] = useState<'text' | 'images' | null>(null);
   
   // Load author profile when deck changes
   useEffect(() => {
@@ -323,6 +325,29 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
     }
   };
 
+  const handlePrint = async (mode: 'text' | 'images') => {
+    setPrintMode(mode);
+
+    if (mode === 'images') {
+      // Preload all card images before printing
+      const imagePromises = sortedCards.map(card =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          img.src = card.images.full;
+        })
+      );
+      await Promise.all(imagePromises);
+    }
+
+    // Allow React to render the print view
+    setTimeout(() => {
+      window.print();
+      setPrintMode(null);
+    }, 200);
+  };
+
   const getCardImageUrl = (cardId: number) => {
     // Find the actual card to get the image URL
     const card = allCards.find(c => c.id === cardId);
@@ -413,6 +438,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
             startEditingDeck(currentDeck.id);
             navigate('/cards');
           }}
+          onPrint={handlePrint}
           getCardImageUrl={getCardImageUrl}
           onViewProfile={handleViewProfile}
         />
@@ -623,6 +649,16 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
         onAddCard={user && currentDeck?.userId === user.id ? handleAddCardToDeck : undefined}
         onRemoveCard={user && currentDeck?.userId === user.id ? handleRemoveCardFromDeck : undefined}
       />
+
+      {/* Print View (rendered into #print-root portal) */}
+      {printMode && currentDeck && (
+        <DeckPrintView
+          deck={currentDeck}
+          cards={sortedCards}
+          mode={printMode}
+          sortedGroups={sortedGroups}
+        />
+      )}
     </div>
   );
 };

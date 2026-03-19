@@ -7,6 +7,7 @@ import CardPhotoSwipe from '../CardPhotoSwipe';
 import { DECK_RULES } from '../../constants';
 import { useCardData } from '../../contexts/CardDataContext';
 import { exportToInktable, validateInktableExport } from '../../utils/inktableExport';
+import TagInput from './TagInput';
 
 interface DeckPanelProps {
   deck: Deck;
@@ -17,6 +18,8 @@ interface DeckPanelProps {
   onStopEditing?: () => void;
   onUpdateDeckName?: (name: string) => void;
   onUpdateDeckDescription?: (description: string) => void;
+  onUpdateDeckTags?: (tags: string[]) => void;
+  allUserTags?: string[];
   validation: { isValid: boolean; errors: string[] };
   isCollapsed?: boolean;
 }
@@ -30,6 +33,8 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
   onStopEditing,
   onUpdateDeckName,
   onUpdateDeckDescription,
+  onUpdateDeckTags,
+  allUserTags,
   validation,
   isCollapsed = false
 }) => {
@@ -398,6 +403,19 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
           )}
         </div>
         
+        {/* Tags */}
+        {onUpdateDeckTags && (
+          <div className="mb-3">
+            <TagInput
+              tags={deck.tags || []}
+              onChange={onUpdateDeckTags}
+              allUserTags={allUserTags}
+              placeholder="Add tag..."
+              maxTags={10}
+            />
+          </div>
+        )}
+
         {/* Card Count */}
         <div className="mb-3">
           <div className="flex justify-between items-center mb-1">

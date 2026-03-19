@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Upload, Search, User, Globe } from 'lucide-react';
 import { useDeck } from '../contexts/DeckContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../contexts/ProfileContext';
 import { useToast } from '../contexts/ToastContext';
+import { useDebounce } from '../hooks/useDebounce';
 import { Deck } from '../types';
 import DeckCard from './DeckCard';
 import PublishedDeckCard from './PublishedDeckCard';
@@ -40,7 +41,7 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
 
   const [activeTab, setActiveTab] = useState<'my' | 'public'>('my');
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const debouncedSearchTerm = useDebounce(searchTerm, 400);
   const [deckProfiles, setDeckProfiles] = useState<Record<string, string>>({});
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; deckId: string; deckName: string }>({
     isOpen: false,
@@ -71,38 +72,31 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
     setDeckProfiles(prev => ({ ...prev, ...profiles }));
   }, [loadUserProfile]);
 
-  // Load public decks only when viewing public tab or when not authenticated
+  // Clear search when switching tabs
   useEffect(() => {
-    // Only load if we're actually viewing public decks
+    setSearchTerm('');
+  }, [activeTab]);
+
+  // Load public decks when on public tab (or unauthenticated) with debounced search
+  useEffect(() => {
     const shouldLoadPublic = (!user || activeTab === 'public');
-
     if (shouldLoadPublic) {
-      // Load once on mount/tab change, not on every keystroke
-      loadPublicDecks(searchTerm);
+      loadPublicDecks(debouncedSearchTerm || undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]); // Only reload when tab changes, not on search
+  }, [activeTab, debouncedSearchTerm]);
 
-  // Handle search with debouncing - separate from initial load
-  useEffect(() => {
-    // Only search if we're viewing public decks AND user is typing
-    const shouldSearch = (!user || activeTab === 'public') && searchTerm.length > 0;
-
-    if (shouldSearch) {
-      if (searchTimeout) clearTimeout(searchTimeout);
-
-      const timeout = setTimeout(async () => {
-        await loadPublicDecks(searchTerm);
-      }, 500); // Reduced debounce to 500ms for better UX
-
-      setSearchTimeout(timeout);
-
-      return () => {
-        if (timeout) clearTimeout(timeout);
-      };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]); // Only trigger on search term change
+  // Client-side filtering for My Decks tab
+  const filteredDecks = useMemo(() => {
+    if (!searchTerm.trim()) return decks;
+    const term = searchTerm.toLowerCase().trim();
+    return decks.filter(deck => {
+      if (deck.name.toLowerCase().includes(term)) return true;
+      if (deck.description?.toLowerCase().includes(term)) return true;
+      if (deck.tags?.some(tag => tag.includes(term))) return true;
+      return false;
+    });
+  }, [decks, searchTerm]);
 
   // Load profile display names when public decks change
   useEffect(() => {
@@ -379,22 +373,20 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
       </div>
 
       <div className="container mx-auto px-2 sm:px-4 py-6 space-y-6">
-        {/* Search Bar for Public Decks */}
-        {activeTab === 'public' && (
+        {/* Search Bar - shown on both tabs */}
         <div className="card-lorcana p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-lorcana-navy" size={20} />
             <input
               type="text"
-              placeholder="Search published decks..."
+              placeholder={activeTab === 'my' ? 'Search my decks...' : 'Search published decks...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border-2 border-lorcana-gold rounded-sm focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-lorcana-cream"
-              aria-label="Search published decks"
+              aria-label={activeTab === 'my' ? 'Search my decks' : 'Search published decks'}
             />
           </div>
         </div>
-      )}
 
       {/* My Decks Header with Actions */}
       {activeTab === 'my' && (
@@ -431,18 +423,24 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
       {/* Deck Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {activeTab === 'my' ? (
-          decks.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <p className="text-lorcana-navy mb-4">You haven't created any decks yet.</p>
-              <button
-                onClick={handleCreateDeck}
-                className="btn-lorcana-gold"
-              >
-                Create Your First Deck
-              </button>
-            </div>
+          filteredDecks.length === 0 ? (
+            decks.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <p className="text-lorcana-navy mb-4">You haven't created any decks yet.</p>
+                <button
+                  onClick={handleCreateDeck}
+                  className="btn-lorcana-gold"
+                >
+                  Create Your First Deck
+                </button>
+              </div>
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-lorcana-navy">No decks match "{searchTerm}"</p>
+              </div>
+            )
           ) : (
-            decks.map(deck => {
+            filteredDecks.map(deck => {
               const summary = getDeckSummary(deck.id);
               if (!summary) return null;
 
