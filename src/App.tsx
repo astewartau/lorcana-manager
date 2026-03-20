@@ -186,9 +186,9 @@ function AppContent() {
                   <div className="bg-lorcana-purple/50 backdrop-blur border border-lorcana-gold/50 rounded-sm p-1">
                     <div className="flex space-x-1">
                       {[
-                        { id: 'cards', label: 'Cards', icon: BookOpen, path: '/cards' },
-                        { id: 'collections', label: 'Collections', icon: Package, path: '/collections' },
-                        { id: 'decks', label: 'Decks', icon: Layers3, path: '/decks' },
+                        { id: 'cards', label: 'Cards', icon: Layers3, path: '/cards' },
+                        { id: 'collections', label: 'Collections', icon: BookOpen, path: '/collections' },
+                        { id: 'decks', label: 'Decks', icon: Package, path: '/decks' },
                         { id: 'community', label: 'Community', icon: Users, path: '/community' },
                       ].map((tab) => {
                         const Icon = tab.icon;

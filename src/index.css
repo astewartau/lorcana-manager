@@ -423,15 +423,28 @@
 
   .print-card-row {
     display: flex;
-    justify-content: space-between;
+    align-items: baseline;
     padding: 1px 0;
     gap: 8px;
   }
 
-  .print-card-info {
-    color: #666;
+  .print-card-set {
+    color: #888;
     white-space: nowrap;
     flex-shrink: 0;
+    min-width: 50px;
+  }
+
+  .print-card-name {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .print-card-qty-text {
+    font-weight: bold;
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-align: right;
   }
 
   .print-image-grid {

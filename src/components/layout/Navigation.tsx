@@ -29,9 +29,9 @@ const Navigation: React.FC<NavigationProps> = ({
     return location.pathname.startsWith(path);
   };
   const tabs: Tab[] = [
-    { id: '/cards', label: 'Cards', icon: BookOpen },
-    { id: '/collections', label: 'Collections', icon: Package },
-    { id: '/decks', label: 'Decks', icon: Layers3 },
+    { id: '/cards', label: 'Cards', icon: Layers3 },
+    { id: '/collections', label: 'Collections', icon: BookOpen },
+    { id: '/decks', label: 'Decks', icon: Package },
     { id: '/community', label: 'Community', icon: Users },
   ];
 

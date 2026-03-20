@@ -123,12 +123,6 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
   };
 
   const totalCards = deck.cards.reduce((sum, card) => sum + card.quantity, 0);
-  const averageCost = deck.cards.length > 0 
-    ? (deck.cards.reduce((sum, entry) => {
-        const card = allCards.find(c => c.id === entry.cardId);
-        return sum + ((card?.cost || 0) * entry.quantity);
-      }, 0) / totalCards).toFixed(1)
-    : '0';
 
   const handleTooltipShow = (x: number, y: number, content: string) => {
     setTooltip({ show: true, x, y, content });
@@ -422,16 +416,13 @@ const DeckPanel: React.FC<DeckPanelProps> = ({
             <span className="text-sm font-medium text-lorcana-navy">
               Cards: {totalCards}/{DECK_RULES.MIN_CARDS}
             </span>
-            <span className="text-sm text-lorcana-purple">
-              Avg: {averageCost}
-            </span>
           </div>
-          <div className="w-full bg-lorcana-cream border-2 border-lorcana-gold rounded-sm h-2">
+          <div className="w-full bg-lorcana-cream border-2 border-lorcana-gold rounded-sm h-3 overflow-hidden">
             <div
-              className={`h-2 rounded-sm transition-all ${
-                totalCards === DECK_RULES.MAX_CARDS ? 'bg-green-500' : totalCards > DECK_RULES.MAX_CARDS ? 'bg-red-500' : 'bg-blue-500'
+              className={`h-full rounded-sm transition-all ${
+                totalCards >= DECK_RULES.MIN_CARDS ? 'bg-green-500' : 'bg-blue-500'
               }`}
-              style={{ width: `${Math.min((totalCards / DECK_RULES.MAX_CARDS) * 100, 100)}%` }}
+              style={{ width: `${Math.min((totalCards / DECK_RULES.MIN_CARDS) * 100, 100)}%` }}
             />
           </div>
         </div>

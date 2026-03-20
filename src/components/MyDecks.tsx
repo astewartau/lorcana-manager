@@ -1,17 +1,33 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Upload, Search, User, Globe } from 'lucide-react';
+import { Plus, Upload, Search, User, Globe, ArrowUpDown } from 'lucide-react';
 import { useDeck } from '../contexts/DeckContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../contexts/ProfileContext';
 import { useToast } from '../contexts/ToastContext';
 import { useDebounce } from '../hooks/useDebounce';
+import { getTagCategory } from '../utils/tagUtils';
 import { Deck } from '../types';
 import DeckCard from './DeckCard';
 import PublishedDeckCard from './PublishedDeckCard';
 import DeleteDeckModal from './DeleteDeckModal';
 import AvatarEditor from './AvatarEditor';
 import DeckImportModal from './DeckImportModal';
+
+type DeckSortMode = 'newest' | 'updated' | 'name' | 'tag';
+
+const SORT_STORAGE_KEY = 'lorebook-deck-sort';
+
+function loadSortPreference(): { sortBy: DeckSortMode; sortTagCategory: string } {
+  try {
+    const stored = localStorage.getItem(SORT_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.sortBy) return parsed;
+    }
+  } catch { /* ignore */ }
+  return { sortBy: 'newest', sortTagCategory: '' };
+}
 
 interface MyDecksProps {
   onBuildDeck: (deckId?: string) => void;
@@ -36,11 +52,15 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
     publishDeck,
     unpublishDeck,
     loadPublicDecks,
-    updateDeck
+    updateDeck,
+    allUserTags
   } = useDeck();
 
   const [activeTab, setActiveTab] = useState<'my' | 'public'>('my');
   const [searchTerm, setSearchTerm] = useState('');
+  const savedSort = useMemo(() => loadSortPreference(), []);
+  const [sortBy, setSortBy] = useState<DeckSortMode>(savedSort.sortBy);
+  const [sortTagCategory, setSortTagCategory] = useState(savedSort.sortTagCategory);
   const debouncedSearchTerm = useDebounce(searchTerm, 400);
   const [deckProfiles, setDeckProfiles] = useState<Record<string, string>>({});
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; deckId: string; deckName: string }>({
@@ -86,17 +106,64 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, debouncedSearchTerm]);
 
-  // Client-side filtering for My Decks tab
-  const filteredDecks = useMemo(() => {
-    if (!searchTerm.trim()) return decks;
-    const term = searchTerm.toLowerCase().trim();
-    return decks.filter(deck => {
-      if (deck.name.toLowerCase().includes(term)) return true;
-      if (deck.description?.toLowerCase().includes(term)) return true;
-      if (deck.tags?.some(tag => tag.includes(term))) return true;
-      return false;
+  // Persist sort preference
+  useEffect(() => {
+    localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify({ sortBy, sortTagCategory }));
+  }, [sortBy, sortTagCategory]);
+
+  // Discover tag categories actually used across user's decks
+  const usedTagCategories = useMemo(() => {
+    const cats = new Set<string>();
+    allUserTags.forEach(tag => {
+      const cat = getTagCategory(tag);
+      if (cat) cats.add(cat);
     });
-  }, [decks, searchTerm]);
+    return Array.from(cats).sort();
+  }, [allUserTags]);
+
+  // Client-side filtering and sorting for My Decks tab
+  const filteredDecks = useMemo(() => {
+    let result = decks;
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      result = result.filter(deck => {
+        if (deck.name.toLowerCase().includes(term)) return true;
+        if (deck.description?.toLowerCase().includes(term)) return true;
+        if (deck.tags?.some(tag => tag.includes(term))) return true;
+        return false;
+      });
+    }
+
+    const sorted = [...result];
+    switch (sortBy) {
+      case 'newest':
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case 'updated':
+        sorted.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        break;
+      case 'name':
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'tag': {
+        if (!sortTagCategory) break;
+        const prefix = sortTagCategory + ':';
+        sorted.sort((a, b) => {
+          const tagA = a.tags?.find(t => t.startsWith(prefix));
+          const tagB = b.tags?.find(t => t.startsWith(prefix));
+          const valA = tagA ? tagA.slice(prefix.length) : '';
+          const valB = tagB ? tagB.slice(prefix.length) : '';
+          // Decks with the tag sort before those without
+          if (valA && !valB) return -1;
+          if (!valA && valB) return 1;
+          if (valA !== valB) return valA.localeCompare(valB);
+          return a.name.localeCompare(b.name);
+        });
+        break;
+      }
+    }
+    return sorted;
+  }, [decks, searchTerm, sortBy, sortTagCategory]);
 
   // Load profile display names when public decks change
   useEffect(() => {
@@ -390,11 +457,44 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
 
       {/* My Decks Header with Actions */}
       {activeTab === 'my' && (
-        <div className="flex justify-between items-center pb-4 border-b border-lorcana-gold/20">
-          <div className="flex gap-6 text-sm text-lorcana-ink">
-            <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-lorcana-gold/20">
+          <div className="flex items-center gap-3 text-sm text-lorcana-ink">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <User size={16} />
               <span>{decks.length} deck{decks.length !== 1 ? 's' : ''}</span>
+            </div>
+
+            {/* Sort controls */}
+            <div className="flex items-center gap-2">
+              <ArrowUpDown size={14} className="text-lorcana-navy flex-shrink-0" />
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  const mode = e.target.value as DeckSortMode;
+                  setSortBy(mode);
+                  if (mode !== 'tag') setSortTagCategory('');
+                }}
+                className="min-w-[140px] px-2 py-1 border border-lorcana-gold/50 rounded-sm bg-lorcana-cream text-lorcana-ink text-sm focus:ring-1 focus:ring-lorcana-gold focus:border-lorcana-gold"
+              >
+                <option value="newest">Newest</option>
+                <option value="updated">Last Updated</option>
+                <option value="name">Name A-Z</option>
+                {usedTagCategories.length > 0 && (
+                  <option value="tag">Tag Category</option>
+                )}
+              </select>
+              {sortBy === 'tag' && usedTagCategories.length > 0 && (
+                <select
+                  value={sortTagCategory}
+                  onChange={(e) => setSortTagCategory(e.target.value)}
+                  className="min-w-[140px] px-2 py-1 border border-lorcana-gold/50 rounded-sm bg-lorcana-cream text-lorcana-ink text-sm focus:ring-1 focus:ring-lorcana-gold focus:border-lorcana-gold"
+                >
+                  <option value="">Select category...</option>
+                  {usedTagCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
@@ -456,7 +556,6 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
                   }}
                   onDuplicate={() => handleDuplicateDeck(deck.id)}
                   onDelete={() => handleDeleteDeck(deck.id)}
-                  onExport={() => handleExportDeck(deck.id)}
                   onPublish={() => handlePublishDeck(deck.id)}
                   onUnpublish={() => handleUnpublishDeck(deck.id)}
                   onEditAvatar={() => handleEditAvatar(deck.id)}

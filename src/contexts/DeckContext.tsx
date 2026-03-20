@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import { Deck, LorcanaCard, DeckSummary, DeckCardEntry } from '../types';
 import { validateDeck as validateDeckUtil } from '../utils/deckValidation';
 import { supabase, UserDeck, TABLES } from '../lib/supabase';
@@ -72,6 +72,47 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
   const [isEditingDeck, setIsEditingDeck] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Refs for latest state — updated manually in card operations so rapid
+  // clicks always read the most recent deck (avoids stale closure problem)
+  const currentDeckRef = useRef<Deck | null>(null);
+  const decksRef = useRef<Deck[]>([]);
+  const saveTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  // Keep refs in sync with React state (catches non-manual updates like DB loads)
+  currentDeckRef.current = currentDeck;
+  decksRef.current = decks;
+
+  // Cleanup pending save timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(saveTimersRef.current).forEach(clearTimeout);
+    };
+  }, []);
+
+  // Debounced DB save for card operations — batches rapid changes into one write
+  const scheduleDeckSave = (deck: Deck) => {
+    if (saveTimersRef.current[deck.id]) {
+      clearTimeout(saveTimersRef.current[deck.id]);
+    }
+    saveTimersRef.current[deck.id] = setTimeout(async () => {
+      delete saveTimersRef.current[deck.id];
+      if (!user) return;
+      try {
+        const { error } = await supabase
+          .from(TABLES.USER_DECKS)
+          .update({
+            cards: deck.cards,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', deck.id)
+          .eq('user_id', user.id);
+        if (error) console.error('Error saving deck cards:', error);
+      } catch (error) {
+        console.error('Error saving deck cards:', error);
+      }
+    }, 500);
+  };
+
   // Load user's decks when authenticated
   useEffect(() => {
     if (user && session) {
@@ -92,7 +133,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
         .from(TABLES.USER_DECKS)
         .select('*')
         .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error loading decks:', error);
@@ -178,7 +219,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
         throw error;
       }
 
-      setDecks(prev => [...prev, newDeck]);
+      setDecks(prev => [newDeck, ...prev]);
       return newDeck.id;
     } catch (error) {
       console.error('Error creating deck:', error);
@@ -223,7 +264,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
         throw error;
       }
 
-      setDecks(prev => [...prev, newDeck]);
+      setDecks(prev => [newDeck, ...prev]);
       setCurrentDeck(newDeck);
       setIsEditingDeck(true);
       return newDeck;
@@ -235,7 +276,27 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
 
   const updateDeck = async (deck: Deck): Promise<void> => {
     if (!user) throw new Error('Authentication required');
-    
+
+    // Cancel any pending debounced card save — this full save supersedes it
+    if (saveTimersRef.current[deck.id]) {
+      clearTimeout(saveTimersRef.current[deck.id]);
+      delete saveTimersRef.current[deck.id];
+    }
+
+    // Capture previous state from refs for rollback
+    const previousDecks = [...decksRef.current];
+    const previousCurrentDeck = currentDeckRef.current;
+
+    // Optimistic update: refs first (for immediate reads), then React state
+    decksRef.current = decksRef.current.map(d => d.id === deck.id ? deck : d);
+    if (currentDeckRef.current?.id === deck.id) {
+      currentDeckRef.current = deck;
+    }
+    setDecks(prev => prev.map(d => d.id === deck.id ? deck : d));
+    if (previousCurrentDeck?.id === deck.id) {
+      setCurrentDeck(deck);
+    }
+
     try {
       const { error } = await supabase
         .from(TABLES.USER_DECKS)
@@ -253,12 +314,14 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
 
       if (error) {
         console.error('Error updating deck:', error);
+        // Revert optimistic update on failure
+        decksRef.current = previousDecks;
+        currentDeckRef.current = previousCurrentDeck;
+        setDecks(previousDecks);
+        if (previousCurrentDeck?.id === deck.id) {
+          setCurrentDeck(previousCurrentDeck);
+        }
         throw error;
-      }
-
-      setDecks(prev => prev.map(d => d.id === deck.id ? deck : d));
-      if (currentDeck?.id === deck.id) {
-        setCurrentDeck(deck);
       }
     } catch (error) {
       console.error('Error updating deck:', error);
@@ -331,7 +394,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
         throw error;
       }
 
-      setDecks(prev => [...prev, newDeck]);
+      setDecks(prev => [newDeck, ...prev]);
       return newDeck.id;
     } catch (error) {
       console.error('Error duplicating deck:', error);
@@ -340,19 +403,15 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
   };
 
   const publishDeck = async (deckId: string): Promise<void> => {
-    const deck = decks.find(d => d.id === deckId);
+    const deck = decksRef.current.find(d => d.id === deckId);
     if (!deck) throw new Error('Deck not found');
-    
-    deck.isPublic = true;
-    await updateDeck(deck);
+    await updateDeck({ ...deck, isPublic: true });
   };
 
   const unpublishDeck = async (deckId: string): Promise<void> => {
-    const deck = decks.find(d => d.id === deckId);
+    const deck = decksRef.current.find(d => d.id === deckId);
     if (!deck) throw new Error('Deck not found');
-    
-    deck.isPublic = false;
-    await updateDeck(deck);
+    await updateDeck({ ...deck, isPublic: false });
   };
 
   const startEditingDeck = (deckId: string): void => {
@@ -374,19 +433,18 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
   };
 
   const addCardToDeck = (card: LorcanaCard, deckId?: string): boolean => {
-    const targetDeck = deckId ? decks.find(d => d.id === deckId) : currentDeck;
+    const targetDeck = deckId
+      ? decksRef.current.find(d => d.id === deckId)
+      : currentDeckRef.current;
     if (!targetDeck) return false;
 
     const existingEntry = targetDeck.cards.find(c => c.cardId === card.id);
-
-    // Get the max copies allowed for this card
     const maxCopies = (card.name === 'Dalmatian Puppy' && card.version === 'Tail Wagger') ? 99 : DECK_RULES.MAX_COPIES_PER_CARD;
 
     if (existingEntry && existingEntry.quantity >= maxCopies) {
       return false;
     }
 
-    // Create a new deck object with updated cards
     const updatedDeck: Deck = {
       ...targetDeck,
       cards: existingEntry
@@ -397,53 +455,55 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
       updatedAt: new Date()
     };
 
-    // Update local state immediately for responsive UI
-    if (targetDeck === currentDeck) {
+    // Update refs immediately so the next rapid click reads fresh state
+    decksRef.current = decksRef.current.map(d => d.id === updatedDeck.id ? updatedDeck : d);
+    if (currentDeckRef.current?.id === updatedDeck.id) {
+      currentDeckRef.current = updatedDeck;
       setCurrentDeck(updatedDeck);
     }
     setDecks(prev => prev.map(d => d.id === updatedDeck.id ? updatedDeck : d));
 
-    // Then update the database
-    updateDeck(updatedDeck);
+    scheduleDeckSave(updatedDeck);
     return true;
   };
 
   const removeCardFromDeck = (cardId: number, deckId?: string): void => {
-    const targetDeck = deckId ? decks.find(d => d.id === deckId) : currentDeck;
+    const targetDeck = deckId
+      ? decksRef.current.find(d => d.id === deckId)
+      : currentDeckRef.current;
     if (!targetDeck) return;
 
-    // Create a new deck object with the card removed
     const updatedDeck: Deck = {
       ...targetDeck,
       cards: targetDeck.cards.filter(c => c.cardId !== cardId),
       updatedAt: new Date()
     };
 
-    // Update local state immediately for responsive UI
-    if (targetDeck === currentDeck) {
+    decksRef.current = decksRef.current.map(d => d.id === updatedDeck.id ? updatedDeck : d);
+    if (currentDeckRef.current?.id === updatedDeck.id) {
+      currentDeckRef.current = updatedDeck;
       setCurrentDeck(updatedDeck);
     }
     setDecks(prev => prev.map(d => d.id === updatedDeck.id ? updatedDeck : d));
 
-    // Then update the database
-    updateDeck(updatedDeck);
+    scheduleDeckSave(updatedDeck);
   };
 
   const updateCardQuantity = (cardId: number, quantity: number, deckId?: string): void => {
-    const targetDeck = deckId ? decks.find(d => d.id === deckId) : currentDeck;
+    const targetDeck = deckId
+      ? decksRef.current.find(d => d.id === deckId)
+      : currentDeckRef.current;
     if (!targetDeck) return;
 
     const entry = targetDeck.cards.find(c => c.cardId === cardId);
     if (!entry) return;
 
-    // Look up the card to check for special rules
     const card = allCards.find(c => c.id === cardId);
     const maxCopies = (card?.name === 'Dalmatian Puppy' && card?.version === 'Tail Wagger') ? 99 : DECK_RULES.MAX_COPIES_PER_CARD;
 
     if (quantity <= 0) {
       removeCardFromDeck(cardId, deckId);
     } else if (quantity <= maxCopies) {
-      // Create a new deck object with updated card quantity
       const updatedDeck: Deck = {
         ...targetDeck,
         cards: targetDeck.cards.map(c =>
@@ -452,36 +512,37 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
         updatedAt: new Date()
       };
 
-      // Update local state immediately for responsive UI
-      if (targetDeck === currentDeck) {
+      decksRef.current = decksRef.current.map(d => d.id === updatedDeck.id ? updatedDeck : d);
+      if (currentDeckRef.current?.id === updatedDeck.id) {
+        currentDeckRef.current = updatedDeck;
         setCurrentDeck(updatedDeck);
       }
       setDecks(prev => prev.map(d => d.id === updatedDeck.id ? updatedDeck : d));
 
-      // Then update the database
-      updateDeck(updatedDeck);
+      scheduleDeckSave(updatedDeck);
     }
   };
 
   const setDeckCards = (cards: DeckCardEntry[], deckId?: string): void => {
-    const targetDeck = deckId ? decks.find(d => d.id === deckId) : currentDeck;
+    const targetDeck = deckId
+      ? decksRef.current.find(d => d.id === deckId)
+      : currentDeckRef.current;
     if (!targetDeck) return;
 
-    // Create a new deck object with the new cards
     const updatedDeck: Deck = {
       ...targetDeck,
       cards: cards,
       updatedAt: new Date()
     };
 
-    // Update local state immediately for responsive UI
-    if (targetDeck === currentDeck) {
+    decksRef.current = decksRef.current.map(d => d.id === updatedDeck.id ? updatedDeck : d);
+    if (currentDeckRef.current?.id === updatedDeck.id) {
+      currentDeckRef.current = updatedDeck;
       setCurrentDeck(updatedDeck);
     }
     setDecks(prev => prev.map(d => d.id === updatedDeck.id ? updatedDeck : d));
 
-    // Then update the database
-    updateDeck(updatedDeck);
+    scheduleDeckSave(updatedDeck);
   };
 
   // Compute unique sorted tags across all user decks for autocomplete
@@ -596,7 +657,7 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
       }
 
       // Add to local state
-      setDecks(prev => [...prev, newDeck]);
+      setDecks(prev => [newDeck, ...prev]);
       
       return true;
     } catch (error) {

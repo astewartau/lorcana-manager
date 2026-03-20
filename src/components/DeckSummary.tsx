@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Package, BarChart3, Plus, Minus } from 'lucide-react';
+import { Package, BarChart3, Plus, Minus, Printer, FileText, Image } from 'lucide-react';
 import { useDeck } from '../contexts/DeckContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../contexts/ProfileContext';
@@ -11,6 +11,7 @@ import CardImage from './CardImage';
 import DeckStatistics from './deck/DeckStatistics';
 import DeckHeader from './deck/DeckHeader';
 import DeckPrintView from './deck/DeckPrintView';
+import { Modal } from './ui/Modal';
 import CardPhotoSwipe from './CardPhotoSwipe';
 import { LorcanaCard } from '../types';
 import { exportToInktable, copyInktableUrl, validateInktableExport } from '../utils/inktableExport';
@@ -37,6 +38,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
   const [isPhotoSwipeOpen, setIsPhotoSwipeOpen] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [printMode, setPrintMode] = useState<'text' | 'images' | null>(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   
   // Load author profile when deck changes
   useEffect(() => {
@@ -325,14 +327,19 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
     }
   };
 
+  const handlePrintClick = () => {
+    setShowPrintModal(true);
+  };
+
   const handlePrint = async (mode: 'text' | 'images') => {
+    setShowPrintModal(false);
     setPrintMode(mode);
 
     if (mode === 'images') {
       // Preload all card images before printing
       const imagePromises = sortedCards.map(card =>
         new Promise<void>((resolve) => {
-          const img = new Image();
+          const img = new window.Image();
           img.onload = () => resolve();
           img.onerror = () => resolve();
           img.src = card.images.full;
@@ -438,7 +445,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
             startEditingDeck(currentDeck.id);
             navigate('/cards');
           }}
-          onPrint={handlePrint}
+          onPrint={handlePrintClick}
           getCardImageUrl={getCardImageUrl}
           onViewProfile={handleViewProfile}
         />
@@ -649,6 +656,41 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
         onAddCard={user && currentDeck?.userId === user.id ? handleAddCardToDeck : undefined}
         onRemoveCard={user && currentDeck?.userId === user.id ? handleRemoveCardFromDeck : undefined}
       />
+
+      {/* Print Modal */}
+      <Modal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        title="Print Deck"
+        titleIcon={<Printer size={24} />}
+        size="sm"
+      >
+        <div className="p-6">
+          <p className="text-sm text-lorcana-navy mb-4">Choose a print format:</p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => handlePrint('text')}
+              className="flex items-center gap-3 px-4 py-3 bg-lorcana-cream border-2 border-lorcana-gold rounded-sm hover:bg-lorcana-gold/20 transition-colors text-left"
+            >
+              <FileText size={20} className="text-lorcana-navy flex-shrink-0" />
+              <div>
+                <div className="font-medium text-lorcana-ink">Text List</div>
+                <div className="text-xs text-lorcana-navy">Card names grouped by category</div>
+              </div>
+            </button>
+            <button
+              onClick={() => handlePrint('images')}
+              className="flex items-center gap-3 px-4 py-3 bg-lorcana-cream border-2 border-lorcana-gold rounded-sm hover:bg-lorcana-gold/20 transition-colors text-left"
+            >
+              <Image size={20} className="text-lorcana-navy flex-shrink-0" />
+              <div>
+                <div className="font-medium text-lorcana-ink">Card Images</div>
+                <div className="text-xs text-lorcana-navy">Grid of card images with quantities</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Print View (rendered into #print-root portal) */}
       {printMode && currentDeck && (

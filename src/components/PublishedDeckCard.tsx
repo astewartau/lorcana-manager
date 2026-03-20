@@ -5,6 +5,7 @@ import { COLOR_ICONS } from '../constants/icons';
 import { useCardData } from '../contexts/CardDataContext';
 import { useCollection } from '../contexts/CollectionContext';
 import AvatarImage from './AvatarImage';
+import { TagPills } from './deck/TagPill';
 
 interface PublishedDeckCardProps {
   deck: Deck;
@@ -173,16 +174,7 @@ const PublishedDeckCard: React.FC<PublishedDeckCardProps> = ({
 
         {/* Tags */}
         {deck.tags && deck.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {deck.tags.map(tag => (
-              <span
-                key={tag}
-                className="text-xs bg-lorcana-navy text-lorcana-gold px-2 py-0.5 rounded-sm"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+          <TagPills tags={deck.tags} className="mt-2" />
         )}
 
         {/* Collection coverage and last updated */}

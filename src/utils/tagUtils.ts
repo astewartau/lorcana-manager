@@ -1,21 +1,21 @@
 /**
  * Normalize a tag string:
  * - Force lowercase
- * - Replace spaces with dashes
+ * - Replace spaces with dashes (but preserve colons for categories)
  * - Replace underscores with dashes
  * - Collapse multiple dashes into one
- * - Remove anything that isn't alphanumeric or dash
+ * - Remove anything that isn't alphanumeric, dash, or colon
  * - Trim leading/trailing dashes
- * - Max 30 characters
+ * - Max 40 characters
  */
 export function normalizeTag(raw: string): string {
   return raw
     .toLowerCase()
     .replace(/[\s_]+/g, '-')
     .replace(/-+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
+    .replace(/[^a-z0-9:-]/g, '')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 30);
+    .slice(0, 40);
 }
 
 /**
@@ -27,4 +27,62 @@ export function parseTags(input: string): string[] {
     .map(t => normalizeTag(t.trim()))
     .filter(t => t.length > 0);
   return tags.filter((tag, index) => tags.indexOf(tag) === index);
+}
+
+/**
+ * Known tag categories with display labels and color schemes.
+ * Tags use the format "category:value" (e.g., "franchise:frozen", "class:aggro").
+ */
+const TAG_CATEGORIES: Record<string, { label: string; bg: string; text: string; hoverBg: string }> = {
+  franchise: { label: 'Franchise', bg: 'bg-amber-100', text: 'text-amber-800', hoverBg: 'hover:bg-amber-200' },
+  class:     { label: 'Class',     bg: 'bg-purple-100', text: 'text-purple-800', hoverBg: 'hover:bg-purple-200' },
+  format:    { label: 'Format',    bg: 'bg-green-100', text: 'text-green-800', hoverBg: 'hover:bg-green-200' },
+  archetype: { label: 'Archetype', bg: 'bg-rose-100', text: 'text-rose-800', hoverBg: 'hover:bg-rose-200' },
+  color:     { label: 'Color',     bg: 'bg-sky-100', text: 'text-sky-800', hoverBg: 'hover:bg-sky-200' },
+};
+
+const DEFAULT_CATEGORY = { label: '', bg: 'bg-lorcana-navy', text: 'text-lorcana-gold', hoverBg: 'hover:bg-lorcana-navy/80' };
+
+/** Extract the category prefix from a tag, or null if none. */
+export function getTagCategory(tag: string): string | null {
+  const colonIndex = tag.indexOf(':');
+  if (colonIndex <= 0) return null;
+  const prefix = tag.slice(0, colonIndex);
+  return prefix in TAG_CATEGORIES ? prefix : null;
+}
+
+/** Get the display value of a tag (without category prefix if it's a known category). */
+export function getTagDisplayName(tag: string): string {
+  const category = getTagCategory(tag);
+  if (!category) return tag;
+  return tag.slice(category.length + 1);
+}
+
+/** Get the category style for a tag. */
+export function getTagStyle(tag: string): { label: string; bg: string; text: string; hoverBg: string } {
+  const category = getTagCategory(tag);
+  if (!category) return DEFAULT_CATEGORY;
+  return TAG_CATEGORIES[category];
+}
+
+/** Get all known category prefixes for autocomplete hints. */
+export function getKnownCategories(): string[] {
+  return Object.keys(TAG_CATEGORIES);
+}
+
+/** Sort tags: categorized tags first (grouped by category), then plain tags. */
+export function sortTags(tags: string[]): string[] {
+  return [...tags].sort((a, b) => {
+    const catA = getTagCategory(a);
+    const catB = getTagCategory(b);
+    // Both categorized: sort by category then value
+    if (catA && catB) {
+      if (catA !== catB) return catA.localeCompare(catB);
+      return a.localeCompare(b);
+    }
+    // Categorized before plain
+    if (catA) return -1;
+    if (catB) return 1;
+    return a.localeCompare(b);
+  });
 }

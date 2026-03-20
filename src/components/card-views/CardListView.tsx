@@ -94,7 +94,7 @@ const CardRow = memo<CardRowProps>(({
               src={rarityIconMap[card.rarity]}
               alt={card.rarity}
               title={card.rarity}
-              className="w-5 h-5 object-contain"
+              className="w-5 h-5 object-contain drop-shadow-[0_0_1px_rgba(0,0,0,0.4)]"
             />
           ) : (
             <span className="text-xs text-lorcana-ink/50">{card.rarity[0]}</span>
@@ -108,7 +108,7 @@ const CardRow = memo<CardRowProps>(({
               src={colorIconMap[card.color]}
               alt={card.color}
               title={card.color}
-              className="w-5 h-5 object-contain"
+              className="w-5 h-5 object-contain drop-shadow-[0_0_1px_rgba(0,0,0,0.4)]"
             />
           ) : (
             <span className="text-xs text-lorcana-ink/50">-</span>
@@ -125,7 +125,7 @@ const CardRow = memo<CardRowProps>(({
           <img
             src={card.inkwell ? "/imgs/inkable.png" : "/imgs/uninkable.png"}
             alt={card.inkwell ? "Inkable" : "Not Inkable"}
-            className="w-5 h-5 object-contain"
+            className="w-5 h-5 object-contain drop-shadow-[0_0_1px_rgba(0,0,0,0.4)]"
           />
         </div>
 
@@ -229,21 +229,21 @@ const CardRow = memo<CardRowProps>(({
                 <img
                   src={rarityIconMap[card.rarity]}
                   alt={card.rarity}
-                  className="w-4 h-4 object-contain"
+                  className="w-4 h-4 object-contain drop-shadow-[0_0_1px_rgba(0,0,0,0.4)]"
                 />
               )}
               {colorIconMap[card.color] && (
                 <img
                   src={colorIconMap[card.color]}
                   alt={card.color}
-                  className="w-4 h-4 object-contain"
+                  className="w-4 h-4 object-contain drop-shadow-[0_0_1px_rgba(0,0,0,0.4)]"
                 />
               )}
               <span className="font-medium">{card.cost}⬡</span>
               <img
                 src={card.inkwell ? "/imgs/inkable.png" : "/imgs/uninkable.png"}
                 alt={card.inkwell ? "Inkable" : "Not Inkable"}
-                className="w-4 h-4 object-contain"
+                className="w-4 h-4 object-contain drop-shadow-[0_0_1px_rgba(0,0,0,0.4)]"
               />
             </div>
           </div>

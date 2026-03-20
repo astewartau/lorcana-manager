@@ -1,8 +1,9 @@
 import React from 'react';
-import { Edit, Eye, Copy, Trash2, Upload } from 'lucide-react';
+import { Edit, Eye, Copy, Trash2 } from 'lucide-react';
 import { Deck } from '../types';
 import { COLOR_ICONS } from '../constants/icons';
 import AvatarImage from './AvatarImage';
+import { TagPills } from './deck/TagPill';
 
 interface DeckCardProps {
   deck: Deck;
@@ -16,7 +17,6 @@ interface DeckCardProps {
   onEdit: (deckId: string) => void;
   onDuplicate: (deckId: string) => void;
   onDelete: (deckId: string) => void;
-  onExport: (deckId: string) => void;
   onPublish?: (deckId: string) => void;
   onUnpublish?: (deckId: string) => void;
   onEditAvatar?: (deckId: string) => void;
@@ -29,7 +29,6 @@ const DeckCard: React.FC<DeckCardProps> = ({
   onEdit,
   onDuplicate,
   onDelete,
-  onExport,
   onPublish,
   onUnpublish,
   onEditAvatar
@@ -53,7 +52,7 @@ const DeckCard: React.FC<DeckCardProps> = ({
   
 
   return (
-    <div className="card-lorcana art-deco-corner group">
+    <div className="card-lorcana art-deco-corner group flex flex-col h-full">
       {/* Header with deck name and status */}
       <div className="p-4 border-b border-lorcana-gold/20">
         <div className="flex items-start justify-between mb-2">
@@ -160,21 +159,12 @@ const DeckCard: React.FC<DeckCardProps> = ({
 
         {/* Tags */}
         {deck.tags && deck.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {deck.tags.map(tag => (
-              <span
-                key={tag}
-                className="text-xs bg-lorcana-navy text-lorcana-gold px-2 py-0.5 rounded-sm"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+          <TagPills tags={deck.tags} className="mt-2" />
         )}
       </div>
 
       {/* Action buttons */}
-      <div className="p-4">
+      <div className="p-4 mt-auto">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={(e) => {
@@ -205,19 +195,9 @@ const DeckCard: React.FC<DeckCardProps> = ({
             }}
             className="btn-lorcana-navy-sm flex items-center gap-1"
             aria-label="Duplicate deck"
+            title="Duplicate deck"
           >
             <Copy size={14} />
-          </button>
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onExport(deck.id);
-            }}
-            className="btn-lorcana-navy-sm flex items-center gap-1"
-            aria-label="Export deck"
-          >
-            <Upload size={14} />
           </button>
 
           <button

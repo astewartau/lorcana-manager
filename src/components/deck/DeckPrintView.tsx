@@ -36,8 +36,9 @@ const DeckPrintView: React.FC<DeckPrintViewProps> = ({ deck, cards, mode, sorted
               </div>
               {groupCards.map(card => (
                 <div key={card.id} className="print-card-row">
-                  <span>{card.quantity}x {card.fullName}</span>
-                  <span className="print-card-info">{card.cost} ink &middot; {card.setCode} #{card.number}</span>
+                  <span className="print-card-set">{card.setCode} #{card.number}</span>
+                  <span className="print-card-name">{card.fullName}</span>
+                  <span className="print-card-qty-text">{card.quantity}x</span>
                 </div>
               ))}
             </div>
