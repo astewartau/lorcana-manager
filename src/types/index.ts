@@ -47,6 +47,22 @@ export interface DeckCardEntry {
   quantity: number;
 }
 
+export interface BinderCardEntry {
+  cardId: number;
+  quantity: number;
+}
+
+export interface CustomBinder {
+  id: string;
+  name: string;
+  description?: string;
+  cards: BinderCardEntry[];
+  isPublic: boolean;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Deck {
   id: string;
   name: string;

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Book, Users, Crown, Loader2, Trash2, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Package, Book, Users, Crown, Loader2, Trash2, Plus, Eye, Edit } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCollection } from '../contexts/CollectionContext';
+import { useBinder } from '../contexts/BinderContext';
 import Collection from './Collection';
 import AuthRequired from './AuthRequired';
 import CollectionGroupModal from './CollectionGroupModal';
+import CreateBinderModal from './binder/CreateBinderModal';
 import { groupService, CollectionGroup, GroupMember } from '../services/groupService';
 import DreambornImport from './DreambornImport';
 import { useModal } from '../hooks';
@@ -187,18 +190,153 @@ const Collections: React.FC = () => {
 };
 
 const CustomCollections: React.FC = () => {
+  const navigate = useNavigate();
+  const { binders, createBinder, deleteBinder, loading } = useBinder();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleCreate = async (name: string, description?: string) => {
+    const binder = await createBinder(name, description);
+    navigate(`/collection/binder/custom/${binder.id}`);
+  };
+
+  const handleDelete = async (binderId: string) => {
+    await deleteBinder(binderId);
+    setDeleteConfirmId(null);
+  };
+
+  if (loading && binders.length === 0) {
+    return (
+      <div className="bg-white border-2 border-lorcana-gold rounded-sm shadow-lg p-12 text-center art-deco-corner">
+        <Loader2 className="mx-auto mb-4 animate-spin text-lorcana-navy" size={48} />
+        <h3 className="text-xl font-semibold text-lorcana-ink mb-2">Loading Binders...</h3>
+      </div>
+    );
+  }
+
+  if (binders.length === 0) {
+    return (
+      <>
+        <div className="bg-white border-2 border-lorcana-gold rounded-sm shadow-lg p-12 text-center art-deco-corner">
+          <Book size={48} className="mx-auto text-lorcana-navy mb-4" />
+          <h3 className="text-xl font-semibold text-lorcana-ink mb-2">Custom Binders</h3>
+          <p className="text-lorcana-navy mb-6">
+            Create custom binders to organize your cards by theme, deck ideas, or any other criteria you choose.
+          </p>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn-lorcana flex items-center gap-2 mx-auto"
+          >
+            <Plus size={16} />
+            <span>Create Custom Binder</span>
+          </button>
+        </div>
+        <CreateBinderModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onCreate={handleCreate}
+        />
+      </>
+    );
+  }
+
   return (
-    <div className="bg-white border-2 border-lorcana-gold rounded-sm shadow-lg p-12 text-center art-deco-corner">
-      <Plus size={48} className="mx-auto text-lorcana-navy mb-4" />
-      <h3 className="text-xl font-semibold text-lorcana-ink mb-2">Custom Binders</h3>
-      <p className="text-lorcana-navy mb-6">
-        Create custom binders to organize your cards by theme, deck ideas, or any other criteria you choose.
-      </p>
-      <button className="btn-lorcana flex items-center gap-2 mx-auto">
-        <Plus size={16} />
-        <span>Create Custom Binder</span>
-      </button>
-    </div>
+    <>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-lorcana-ink">
+            <Book size={16} />
+            <span>{binders.length} binder{binders.length !== 1 ? 's' : ''}</span>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn-lorcana-gold-sm flex items-center gap-2"
+          >
+            <Plus size={16} />
+            <span>New Binder</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {binders.map(binder => {
+            const cardCount = binder.cards.reduce((sum, c) => sum + c.quantity, 0);
+            const uniqueCount = binder.cards.length;
+
+            return (
+              <div
+                key={binder.id}
+                className="card-lorcana art-deco-corner group flex flex-col"
+              >
+                <div className="p-4 flex-1">
+                  <h3
+                    className="text-lg font-bold text-lorcana-ink cursor-pointer hover:text-lorcana-navy transition-colors truncate mb-1"
+                    onClick={() => navigate(`/collection/binder/custom/${binder.id}`)}
+                  >
+                    {binder.name}
+                  </h3>
+                  {binder.description && (
+                    <p className="text-sm text-lorcana-navy line-clamp-2 mb-2">{binder.description}</p>
+                  )}
+                  <div className="flex items-center gap-3 text-xs text-lorcana-navy">
+                    <span>{uniqueCount} card{uniqueCount !== 1 ? 's' : ''}</span>
+                    {cardCount !== uniqueCount && (
+                      <span>({cardCount} total)</span>
+                    )}
+                    <span>Created {binder.createdAt.toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                <div className="p-4 pt-0 mt-auto">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => navigate(`/collection/binder/custom/${binder.id}`)}
+                      className="btn-lorcana-gold-sm flex items-center gap-1 flex-1 justify-center"
+                    >
+                      <Eye size={14} />
+                      <span>View</span>
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirmId(binder.id)}
+                      className="btn-lorcana-navy-sm flex items-center gap-1 hover:bg-red-500 hover:text-white hover:border-red-500"
+                      aria-label="Delete binder"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Inline delete confirmation */}
+                {deleteConfirmId === binder.id && (
+                  <div className="border-t-2 border-red-300 bg-red-50 p-3">
+                    <p className="text-sm text-red-700 mb-2">Delete "{binder.name}"?</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setDeleteConfirmId(null)}
+                        className="flex-1 px-2 py-1 text-xs bg-gray-200 rounded-sm hover:bg-gray-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleDelete(binder.id)}
+                        className="flex-1 px-2 py-1 text-xs bg-red-600 text-white rounded-sm hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <CreateBinderModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreate={handleCreate}
+      />
+    </>
   );
 };
 

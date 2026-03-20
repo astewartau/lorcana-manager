@@ -13,6 +13,7 @@ import ResetPassword from './components/ResetPassword';
 import AuthCallback from './components/AuthCallback';
 import { CollectionProvider } from './contexts/CollectionContext';
 import { DeckProvider, useDeck } from './contexts/DeckContext';
+import { BinderProvider } from './contexts/BinderContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProfileProvider, useProfile } from './contexts/ProfileContext';
 import { CardDataProvider } from './contexts/CardDataContext';
@@ -231,6 +232,7 @@ function AppContent() {
                   <Route path="/" element={<CardBrowser />} />
                   <Route path="/cards" element={<CardBrowser />} />
                   <Route path="/collections" element={<Collections />} />
+                  <Route path="/collection/binder/custom/:customBinderId" element={<SetBinder />} />
                   <Route path="/collection/binder/:setCode" element={<SetBinder />} />
                   <Route path="/binder/:binderId" element={<SetBinder />} />
                   <Route path="/decks" element={<MyDecks onBuildDeck={() => {}} onViewDeck={(deckId: string) => navigate(`/decks/${deckId}`)} />} />
@@ -330,12 +332,14 @@ function App() {
         <CardDataProvider>
           <CollectionProvider>
             <DeckProvider>
+            <BinderProvider>
               <ToastProvider>
                 <Router>
                   <AppContent />
                   <ToastContainer />
                 </Router>
               </ToastProvider>
+            </BinderProvider>
             </DeckProvider>
           </CollectionProvider>
         </CardDataProvider>

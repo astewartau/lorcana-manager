@@ -16,6 +16,15 @@ interface BinderCardSlotProps {
   onCardClick: (card: LorcanaCard) => void;
   onMouseMove: (e: React.MouseEvent<HTMLDivElement>, cardId: string) => void;
   onMouseLeave: () => void;
+  isCustomBinder?: boolean;
+  onAddCard?: (cardId: number) => void;
+  onRemoveCard?: (cardId: number) => void;
+  cardIndex?: number;
+  isDragging?: boolean;
+  isDragTarget?: boolean;
+  onDragStart?: (index: number) => void;
+  onDragOver?: (index: number) => void;
+  onDragEnd?: () => void;
 }
 
 // Plastic sleeve shine effect styles (consolidated)
@@ -79,7 +88,16 @@ const BinderCardSlot: React.FC<BinderCardSlotProps> = ({
   mousePosition,
   onCardClick,
   onMouseMove,
-  onMouseLeave
+  onMouseLeave,
+  isCustomBinder,
+  onAddCard,
+  onRemoveCard,
+  cardIndex,
+  isDragging,
+  isDragTarget,
+  onDragStart,
+  onDragOver,
+  onDragEnd
 }) => {
   const isHovered = hoveredCard === card.id.toString();
 
@@ -118,12 +136,31 @@ const BinderCardSlot: React.FC<BinderCardSlotProps> = ({
             />
           </div>
 
-          {card.owned && (
+          {card.owned && isCustomBinder && onAddCard && onRemoveCard ? (
+            /* Custom binder quantity controls */
+            <div className="absolute top-0.5 right-0.5 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={(e) => { e.stopPropagation(); onRemoveCard(card.id); }}
+                className="w-5 h-5 flex items-center justify-center bg-red-500/90 text-white rounded text-xs font-bold shadow hover:bg-red-600 transition-colors"
+              >
+                -
+              </button>
+              <span className="bg-lorcana-gold text-lorcana-ink text-xs font-bold px-1 py-0.5 rounded shadow-lg min-w-[18px] text-center">
+                {card.totalQuantity}
+              </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); onAddCard(card.id); }}
+                className="w-5 h-5 flex items-center justify-center bg-green-500/90 text-white rounded text-xs font-bold shadow hover:bg-green-600 transition-colors"
+              >
+                +
+              </button>
+            </div>
+          ) : card.owned ? (
             /* Quantity badge */
             <div className="absolute top-1 right-1 bg-lorcana-gold text-lorcana-ink text-xs font-bold px-1 py-0.5 rounded shadow-lg">
               {card.totalQuantity}
             </div>
-          )}
+          ) : null}
 
           {/* Card number */}
           <div className="absolute bottom-1 left-1 bg-black bg-opacity-80 text-white text-xs px-1 py-0.5 rounded">
@@ -135,12 +172,30 @@ const BinderCardSlot: React.FC<BinderCardSlotProps> = ({
   }
 
   // Desktop version with full hover effects
+  const draggable = isCustomBinder && onDragStart && cardIndex !== undefined;
   return (
     <div
-      className={`relative overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer aspect-[5/7] ${isFullscreen ? 'w-[calc(25vh*5/7)]' : ''}`}
+      className={`relative overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl aspect-[5/7] ${isFullscreen ? 'w-[calc(25vh*5/7)]' : ''} ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${isDragTarget ? 'ring-2 ring-lorcana-gold scale-95' : ''}`}
       onClick={() => onCardClick(card)}
       onMouseMove={(e) => onMouseMove(e, card.id.toString())}
       onMouseLeave={onMouseLeave}
+      draggable={draggable}
+      onDragStart={draggable ? (e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        onDragStart!(cardIndex!);
+      } : undefined}
+      onDragOver={draggable ? (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        onDragOver?.(cardIndex!);
+      } : undefined}
+      onDrop={draggable ? (e) => {
+        e.preventDefault();
+        onDragEnd?.();
+      } : undefined}
+      onDragEnd={draggable ? () => {
+        onDragEnd?.();
+      } : undefined}
       style={{
         border: card.owned ? '1px solid rgba(255,255,255,0.3)' : '2px dashed #999',
         background: card.owned
@@ -148,7 +203,8 @@ const BinderCardSlot: React.FC<BinderCardSlotProps> = ({
           : 'linear-gradient(135deg, #F5F5F5 0%, #E8E8E8 100%)',
         boxShadow: card.owned
           ? 'inset 0 1px 3px rgba(0,0,0,0.2), inset 0 -1px 2px rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.1)'
-          : 'inset 0 1px 3px rgba(0,0,0,0.3)'
+          : 'inset 0 1px 3px rgba(0,0,0,0.3)',
+        opacity: isDragging ? 0.4 : 1
       }}
     >
       {/* Card slot indentation effect */}
@@ -171,7 +227,26 @@ const BinderCardSlot: React.FC<BinderCardSlotProps> = ({
           />
         </div>
 
-        {card.owned ? (
+        {card.owned && isCustomBinder && onAddCard && onRemoveCard ? (
+          /* Custom binder quantity controls */
+          <div className="absolute top-1 right-1 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={(e) => { e.stopPropagation(); onRemoveCard(card.id); }}
+              className="w-5 h-5 flex items-center justify-center bg-red-500/90 text-white rounded text-xs font-bold shadow hover:bg-red-600 transition-colors"
+            >
+              -
+            </button>
+            <span className="bg-lorcana-gold text-lorcana-ink text-xs font-bold px-1.5 py-0.5 rounded shadow-lg min-w-[20px] text-center">
+              {card.totalQuantity}
+            </span>
+            <button
+              onClick={(e) => { e.stopPropagation(); onAddCard(card.id); }}
+              className="w-5 h-5 flex items-center justify-center bg-green-500/90 text-white rounded text-xs font-bold shadow hover:bg-green-600 transition-colors"
+            >
+              +
+            </button>
+          </div>
+        ) : card.owned ? (
           /* Quantity badge */
           <div className="absolute top-1 right-1 bg-lorcana-gold text-lorcana-ink text-xs font-bold px-1.5 py-0.5 rounded shadow-lg">
             {card.totalQuantity}

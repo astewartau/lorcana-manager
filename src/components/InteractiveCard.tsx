@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, Book } from 'lucide-react';
 import { LorcanaCard } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useDeck } from '../contexts/DeckContext';
+import { useBinder } from '../contexts/BinderContext';
 import { useCollection } from '../contexts/CollectionContext';
 import CardImage from './CardImage';
 import ContextMenu from './ContextMenu';
@@ -24,6 +25,7 @@ const InteractiveCard: React.FC<CardProps> = ({
 }) => {
   const { user } = useAuth();
   const { isEditingDeck, currentDeck, addCardToDeck, removeCardFromDeck, updateCardQuantity, createDeckAndStartEditing } = useDeck();
+  const { binders, addCardToBinder } = useBinder();
   const { getCardQuantity } = useCollection();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [transform, setTransform] = useState('');
@@ -287,7 +289,16 @@ const InteractiveCard: React.FC<CardProps> = ({
               icon: <Plus size={14} />,
               onClick: handleAddToNewDeck,
               disabled: isEditingDeck
-            }
+            },
+            ...binders.map((binder, i) => {
+              const qty = binder.cards.find(c => c.cardId === card.id)?.quantity;
+              return {
+                label: `Add to ${binder.name}${qty ? ` (${qty})` : ''}`,
+                icon: <Book size={14} />,
+                onClick: () => addCardToBinder(binder.id, card.id),
+                dividerBefore: i === 0
+              };
+            })
           ]}
           onClose={() => setContextMenu(null)}
         />

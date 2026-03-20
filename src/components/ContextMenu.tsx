@@ -5,6 +5,7 @@ interface ContextMenuItem {
   icon?: React.ReactNode;
   onClick: () => void;
   disabled?: boolean;
+  dividerBefore?: boolean;
 }
 
 interface ContextMenuProps {
@@ -73,8 +74,11 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, items, onClose }) => {
     >
       <div className="py-1">
         {items.map((item, index) => (
+          <React.Fragment key={index}>
+          {item.dividerBefore && (
+            <div className="my-1 border-t border-lorcana-gold/30" />
+          )}
           <button
-            key={index}
             onClick={() => {
               if (!item.disabled) {
                 item.onClick();
@@ -94,6 +98,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, items, onClose }) => {
             {item.icon && <span className="flex-shrink-0">{item.icon}</span>}
             <span className="text-sm font-medium">{item.label}</span>
           </button>
+          </React.Fragment>
         ))}
       </div>
     </div>

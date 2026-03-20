@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Book, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeft, Book, ChevronLeft, ChevronRight, Maximize2, Minimize2, Search, Plus, Minus, X } from 'lucide-react';
 import { useCollection } from '../contexts/CollectionContext';
+import { useBinder } from '../contexts/BinderContext';
 import { useBinderNavigation } from '../hooks/useBinderNavigation';
 import { useCardData } from '../contexts/CardDataContext';
 import CardPhotoSwipe from './CardPhotoSwipe';
@@ -10,9 +11,10 @@ import { LorcanaCard } from '../types';
 import { supabase, TABLES, UserBinder } from '../lib/supabase';
 
 const SetBinder: React.FC = () => {
-  const { setCode, binderId } = useParams<{ setCode?: string; binderId?: string }>();
+  const { setCode, binderId, customBinderId } = useParams<{ setCode?: string; binderId?: string; customBinderId?: string }>();
   const navigate = useNavigate();
   const { getCardQuantity } = useCollection();
+  const { binders, setCurrentBinder, addCardToBinder, removeCardFromBinder, setBinderCards } = useBinder();
   const { allCards, sets } = useCardData();
   const [selectedCard, setSelectedCard] = useState<LorcanaCard | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,7 +27,24 @@ const SetBinder: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showAddPanel, setShowAddPanel] = useState(false);
+  const [addSearchTerm, setAddSearchTerm] = useState('');
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
   const binderRef = useRef<HTMLDivElement>(null);
+
+  // Custom binder from context
+  const customBinder = customBinderId ? binders.find(b => b.id === customBinderId) : null;
+  const isCustomBinder = !!customBinderId;
+
+  // Set current binder in context when viewing
+  useEffect(() => {
+    if (customBinder) {
+      setCurrentBinder(customBinder);
+    }
+    return () => setCurrentBinder(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customBinderId]);
 
   // Detect mobile screen size
   useEffect(() => {
@@ -206,27 +225,49 @@ const SetBinder: React.FC = () => {
   // Determine the actual setCode to use (from URL param or from published binder)
   const effectiveSetCode = setCode || publishedBinder?.set_code;
   const setData = effectiveSetCode ? sets.find(set => set.code === effectiveSetCode) : null;
-  
-  const setCards = !effectiveSetCode ? [] : allCards
-    .filter(card => card.setCode === effectiveSetCode && !card.promoGrouping) // Exclude promo cards
-    .sort((a, b) => a.number - b.number); // Simple card number sort
 
-  const cardsWithOwnership = setCards.map(card => {
-    let totalOwned = 0;
-    
-    // Use the appropriate card quantity function based on context
-    const quantities = getOwnerCardQuantity(card.id);
-    totalOwned = quantities.total;
-    
-    return {
-      ...card,
-      owned: totalOwned > 0,
-      totalQuantity: totalOwned
-    };
-  });
+  // Build card list: custom binder uses its own card entries, set binder uses set cards
+  const cardsWithOwnership = useMemo(() => {
+    if (isCustomBinder && customBinder) {
+      return customBinder.cards
+        .map(entry => {
+          const card = allCards.find(c => c.id === entry.cardId);
+          if (!card) return null;
+          return {
+            ...card,
+            owned: true,
+            totalQuantity: entry.quantity
+          };
+        })
+        .filter((c): c is NonNullable<typeof c> => c !== null);
+    }
+
+    const setCards = !effectiveSetCode ? [] : allCards
+      .filter(card => card.setCode === effectiveSetCode && !card.promoGrouping)
+      .sort((a, b) => a.number - b.number);
+
+    return setCards.map(card => {
+      const quantities = getOwnerCardQuantity(card.id);
+      return {
+        ...card,
+        owned: quantities.total > 0,
+        totalQuantity: quantities.total
+      };
+    });
+  }, [isCustomBinder, customBinder, effectiveSetCode, allCards, binderId, publishedBinder, ownerCollectionData]);
+
+  // Search results for add panel
+  const addSearchResults = useMemo(() => {
+    if (!showAddPanel || !addSearchTerm.trim() || !customBinder) return [];
+    const term = addSearchTerm.toLowerCase().trim();
+    return allCards
+      .filter(c => c.fullName.toLowerCase().includes(term) || c.name.toLowerCase().includes(term))
+      .slice(0, 12);
+  }, [showAddPanel, addSearchTerm, allCards, customBinder]);
 
   // Calculate derived values
   const ownedCount = cardsWithOwnership.filter(card => card.owned).length;
+  const setCards = isCustomBinder ? cardsWithOwnership : (!effectiveSetCode ? [] : allCards.filter(card => card.setCode === effectiveSetCode && !card.promoGrouping));
   const completionPercentage = setCards.length > 0 ? (ownedCount / setCards.length) * 100 : 0;
   // Desktop: 18 cards per spread (9 left + 9 right), Mobile: 9 cards per page
   const totalPageSpreads = Math.ceil(cardsWithOwnership.length / 18);
@@ -271,6 +312,26 @@ const SetBinder: React.FC = () => {
   const handleCardMouseLeave = () => {
     setHoveredCard(null);
   };
+
+  // Drag and drop handlers for custom binder reordering
+  const handleDragStart = useCallback((index: number) => {
+    setDragIndex(index);
+  }, []);
+
+  const handleDragOver = useCallback((index: number) => {
+    setDropIndex(index);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    if (dragIndex !== null && dropIndex !== null && dragIndex !== dropIndex && customBinder && customBinderId) {
+      const newCards = [...customBinder.cards];
+      const [moved] = newCards.splice(dragIndex, 1);
+      newCards.splice(dropIndex, 0, moved);
+      setBinderCards(customBinderId, newCards);
+    }
+    setDragIndex(null);
+    setDropIndex(null);
+  }, [dragIndex, dropIndex, customBinder, customBinderId, setBinderCards]);
 
   // Show loading spinner while loading published binder
   if (loading && binderId) {
@@ -317,7 +378,21 @@ const SetBinder: React.FC = () => {
     );
   }
 
-  if (!setData || (!setCode && !effectiveSetCode)) {
+  if (isCustomBinder && !customBinder) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-lorcana-ink mb-2">Binder not found</h2>
+          <p className="text-lorcana-navy mb-4">This binder may have been deleted.</p>
+          <button onClick={() => navigate('/collections')} className="btn-lorcana">
+            Back to Collections
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isCustomBinder && (!setData || (!setCode && !effectiveSetCode))) {
     const isBinderNotFound = binderId && !publishedBinder;
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -326,12 +401,12 @@ const SetBinder: React.FC = () => {
             {isBinderNotFound ? 'Binder not found' : 'Set not found'}
           </h2>
           <p className="text-lorcana-navy mb-4">
-            {isBinderNotFound 
+            {isBinderNotFound
               ? 'This binder may have been deleted or made private.'
               : 'The requested set could not be found.'
             }
           </p>
-          <button 
+          <button
             onClick={() => navigate(binderId ? '/community' : '/collections')}
             className="btn-lorcana"
           >
@@ -364,7 +439,7 @@ const SetBinder: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <button
-                    onClick={() => navigate(binderId ? '/community' : '/collections')}
+                    onClick={() => navigate(isCustomBinder ? '/collections' : binderId ? '/community' : '/collections')}
                     className="flex items-center gap-2 text-lorcana-navy hover:text-lorcana-gold transition-colors"
                   >
                     <ArrowLeft size={20} />
@@ -375,25 +450,45 @@ const SetBinder: React.FC = () => {
                     <Book size={24} className="text-lorcana-gold" />
                     <div>
                       <h1 className="text-2xl font-bold text-lorcana-ink">
-                        {publishedBinder ? publishedBinder.name : `${setData.name} Binder`}
+                        {isCustomBinder
+                          ? customBinder?.name || 'Custom Binder'
+                          : publishedBinder ? publishedBinder.name : `${setData!.name} Binder`}
                       </h1>
                       <p className="text-lorcana-navy">
-                        {publishedBinder && publishedBinderOwner ? (
+                        {isCustomBinder ? (
                           <>
-                            {publishedBinderOwner.display_name}'s Collection • Set {setData.number} • {ownedCount}/{setCards.length} cards ({completionPercentage.toFixed(1)}%)
+                            {cardsWithOwnership.length} card{cardsWithOwnership.length !== 1 ? 's' : ''}
+                            {customBinder?.description && <> • {customBinder.description}</>}
+                          </>
+                        ) : publishedBinder && publishedBinderOwner ? (
+                          <>
+                            {publishedBinderOwner.display_name}'s Collection • Set {setData!.number} • {ownedCount}/{setCards.length} cards ({completionPercentage.toFixed(1)}%)
                           </>
                         ) : (
                           <>
-                            Set {setData.number} • {ownedCount}/{setCards.length} cards ({completionPercentage.toFixed(1)}%)
+                            Set {setData!.number} • {ownedCount}/{setCards.length} cards ({completionPercentage.toFixed(1)}%)
                           </>
                         )}
                       </p>
                     </div>
                   </div>
                 </div>
-                
-                {/* Right side - Fullscreen button */}
-                <div className="flex items-center">
+
+                {/* Right side - Add Cards + Fullscreen */}
+                <div className="flex items-center gap-2">
+                  {isCustomBinder && (
+                    <button
+                      onClick={() => setShowAddPanel(!showAddPanel)}
+                      className={`flex items-center gap-2 px-3 py-2 transition-colors border rounded-lg ${
+                        showAddPanel
+                          ? 'bg-lorcana-gold text-lorcana-navy border-lorcana-gold'
+                          : 'text-lorcana-navy hover:text-lorcana-gold border-lorcana-gold/30 hover:border-lorcana-gold'
+                      }`}
+                    >
+                      <Plus size={18} />
+                      <span className="hidden sm:inline">Add Cards</span>
+                    </button>
+                  )}
                   <button
                     onClick={toggleFullscreen}
                     className="flex items-center gap-2 px-3 py-2 text-lorcana-navy hover:text-lorcana-gold transition-colors border border-lorcana-gold/30 hover:border-lorcana-gold rounded-lg"
@@ -409,6 +504,67 @@ const SetBinder: React.FC = () => {
         </div>
       )}
       
+      {/* Search/Add Panel for custom binders */}
+      {showAddPanel && isCustomBinder && !isFullscreen && (
+        <div className="relative z-10 px-4 pt-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="bg-white/95 backdrop-blur border-2 border-lorcana-gold rounded-lg shadow-xl p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex-1 relative">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-lorcana-navy/50" />
+                  <input
+                    type="text"
+                    value={addSearchTerm}
+                    onChange={(e) => setAddSearchTerm(e.target.value)}
+                    placeholder="Search cards to add..."
+                    className="w-full pl-9 pr-3 py-2 border-2 border-lorcana-gold/50 rounded-lg bg-lorcana-cream text-lorcana-ink focus:ring-2 focus:ring-lorcana-gold/50 focus:border-lorcana-gold"
+                    autoFocus
+                  />
+                </div>
+                <button
+                  onClick={() => { setShowAddPanel(false); setAddSearchTerm(''); }}
+                  className="p-2 text-lorcana-navy hover:text-red-500 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              {addSearchResults.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                  {addSearchResults.map(card => {
+                    const inBinder = customBinder?.cards.find(c => c.cardId === card.id);
+                    return (
+                      <div key={card.id} className="relative group">
+                        <div className="aspect-[5/7] rounded overflow-hidden shadow-md border border-lorcana-gold/30">
+                          <img
+                            src={card.images.thumbnail}
+                            alt={card.fullName}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                        <button
+                          onClick={() => addCardToBinder(customBinderId!, card.id)}
+                          className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/40 transition-colors rounded"
+                        >
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-lorcana-gold text-lorcana-ink text-xs font-bold px-2 py-1 rounded shadow">
+                            {inBinder ? `Add (${inBinder.quantity})` : 'Add'}
+                          </span>
+                        </button>
+                        <p className="text-xs text-lorcana-ink mt-1 truncate text-center">{card.fullName}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : addSearchTerm.trim() ? (
+                <p className="text-center text-lorcana-navy/60 py-4">No cards found for "{addSearchTerm}"</p>
+              ) : (
+                <p className="text-center text-lorcana-navy/60 py-4">Type a card name to search</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Fullscreen controls overlay */}
       {isFullscreen && (
         <>
@@ -768,7 +924,9 @@ const SetBinder: React.FC = () => {
                     <div className={`grid grid-cols-3 ${isFullscreen ? 'gap-8 h-[calc(100%-4rem)] w-full justify-items-center px-8' : 'gap-3 flex-1'}`}>
                       {cardsWithOwnership
                         .slice(currentPageSpread * 18, currentPageSpread * 18 + 9)
-                        .map((cardData) => (
+                        .map((cardData, sliceIdx) => {
+                          const absIdx = currentPageSpread * 18 + sliceIdx;
+                          return (
                           <BinderCardSlot
                             key={cardData.id}
                             card={cardData}
@@ -779,8 +937,18 @@ const SetBinder: React.FC = () => {
                             onCardClick={handleCardClick}
                             onMouseMove={handleCardMouseMove}
                             onMouseLeave={handleCardMouseLeave}
+                            isCustomBinder={isCustomBinder}
+                            onAddCard={isCustomBinder ? (cardId) => addCardToBinder(customBinderId!, cardId) : undefined}
+                            onRemoveCard={isCustomBinder ? (cardId) => removeCardFromBinder(customBinderId!, cardId) : undefined}
+                            cardIndex={absIdx}
+                            isDragging={dragIndex === absIdx}
+                            isDragTarget={dropIndex === absIdx}
+                            onDragStart={isCustomBinder ? handleDragStart : undefined}
+                            onDragOver={isCustomBinder ? handleDragOver : undefined}
+                            onDragEnd={isCustomBinder ? handleDragEnd : undefined}
                           />
-                        ))}
+                          );
+                        })}
 
                       {Array.from({
                         length: Math.max(0, 9 - cardsWithOwnership.slice(currentPageSpread * 18, currentPageSpread * 18 + 9).length)
@@ -802,7 +970,7 @@ const SetBinder: React.FC = () => {
 
                   {/* Right Page */}
                   <div className="relative flex-1">
-                    
+
                     <div className="h-full flex flex-col relative z-10" style={{
                       position: 'relative',
                       background: `
@@ -826,7 +994,7 @@ const SetBinder: React.FC = () => {
                       background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.05), rgba(0,0,0,0.1))',
                       boxShadow: '1px 0 2px rgba(0,0,0,0.05)'
                     }} />
-                    
+
                     {/* Paper texture enhancement - TEST */}
                     <div className="absolute inset-0 opacity-50 pointer-events-none" style={{
                       background: `
@@ -839,7 +1007,9 @@ const SetBinder: React.FC = () => {
                     <div className={`grid grid-cols-3 ${isFullscreen ? 'gap-8 h-[calc(100%-4rem)] w-full justify-items-center px-8' : 'gap-3 flex-1'}`}>
                       {cardsWithOwnership
                         .slice(currentPageSpread * 18 + 9, currentPageSpread * 18 + 18)
-                        .map((cardData) => (
+                        .map((cardData, sliceIdx) => {
+                          const absIdx = currentPageSpread * 18 + 9 + sliceIdx;
+                          return (
                           <BinderCardSlot
                             key={cardData.id}
                             card={cardData}
@@ -850,8 +1020,18 @@ const SetBinder: React.FC = () => {
                             onCardClick={handleCardClick}
                             onMouseMove={handleCardMouseMove}
                             onMouseLeave={handleCardMouseLeave}
+                            isCustomBinder={isCustomBinder}
+                            onAddCard={isCustomBinder ? (cardId) => addCardToBinder(customBinderId!, cardId) : undefined}
+                            onRemoveCard={isCustomBinder ? (cardId) => removeCardFromBinder(customBinderId!, cardId) : undefined}
+                            cardIndex={absIdx}
+                            isDragging={dragIndex === absIdx}
+                            isDragTarget={dropIndex === absIdx}
+                            onDragStart={isCustomBinder ? handleDragStart : undefined}
+                            onDragOver={isCustomBinder ? handleDragOver : undefined}
+                            onDragEnd={isCustomBinder ? handleDragEnd : undefined}
                           />
-                        ))}
+                          );
+                        })}
 
                       {Array.from({
                         length: Math.max(0, 9 - cardsWithOwnership.slice(currentPageSpread * 18 + 9, currentPageSpread * 18 + 18).length)
@@ -917,6 +1097,9 @@ const SetBinder: React.FC = () => {
                             onCardClick={handleCardClick}
                             onMouseMove={handleCardMouseMove}
                             onMouseLeave={handleCardMouseLeave}
+                            isCustomBinder={isCustomBinder}
+                            onAddCard={isCustomBinder ? (cardId) => addCardToBinder(customBinderId!, cardId) : undefined}
+                            onRemoveCard={isCustomBinder ? (cardId) => removeCardFromBinder(customBinderId!, cardId) : undefined}
                           />
                         ))}
 
