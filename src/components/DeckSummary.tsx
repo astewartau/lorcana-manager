@@ -430,6 +430,33 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
     }, 200);
   };
 
+  const handleExportCsv = () => {
+    if (!currentDeck) return;
+    const headers = ['Set', 'Number', 'Quantity', 'Name', 'Version', 'Full Name', 'Color', 'Cost', 'Type', 'Rarity'];
+    const rows = sortedCards.map(card => [
+      card.setCode,
+      card.number,
+      card.quantity,
+      card.name,
+      card.version || '',
+      card.fullName,
+      card.color,
+      card.cost,
+      card.type,
+      card.rarity,
+    ]);
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${currentDeck.name.replace(/[^a-z0-9]/gi, '_')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const getCardImageUrl = (cardId: number) => {
     // Find the actual card to get the image URL
     const card = allCards.find(c => c.id === cardId);
@@ -521,6 +548,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
             navigate('/cards');
           }}
           onPrint={handlePrintClick}
+          onExportCsv={handleExportCsv}
           getCardImageUrl={getCardImageUrl}
           onViewProfile={handleViewProfile}
         />

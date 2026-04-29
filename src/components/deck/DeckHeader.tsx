@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Edit3, User, ExternalLink, Copy, Check, Printer } from 'lucide-react';
+import { ArrowLeft, Edit3, User, ExternalLink, Copy, Check, Printer, Download } from 'lucide-react';
 import { Deck, DeckSummary } from '../../types';
 import { COLOR_ICONS } from '../../constants/icons';
 import { DECK_RULES } from '../../constants';
@@ -18,6 +18,7 @@ interface DeckHeaderProps {
   onCopyInktableUrl: () => void;
   onEditDeck: () => void;
   onPrint?: () => void;
+  onExportCsv?: () => void;
   getCardImageUrl: (cardId: number) => string;
   onViewProfile: (userId: string) => void;
 }
@@ -35,6 +36,7 @@ const DeckHeader: React.FC<DeckHeaderProps> = ({
   onCopyInktableUrl,
   onEditDeck,
   onPrint,
+  onExportCsv,
   getCardImageUrl,
   onViewProfile
 }) => {
@@ -140,6 +142,16 @@ const DeckHeader: React.FC<DeckHeaderProps> = ({
         >
           <Printer size={16} />
           <span>Print</span>
+        </button>
+      )}
+      {onExportCsv && (
+        <button
+          onClick={onExportCsv}
+          className={`btn-lorcana-navy flex items-center ${stacked ? 'justify-center w-full' : ''} space-x-2`}
+          title="Export deck as CSV"
+        >
+          <Download size={16} />
+          <span>CSV</span>
         </button>
       )}
       {isOwner && (
