@@ -2,9 +2,9 @@ import { LorcanaCard, FilterOptions, SortOption } from '../types';
 import { rarityOrder } from '../utils/cardDataUtils';
 import { matchesSmartSearch } from './smartSearch';
 
-// Core Constructed legal sets (sets 5-11)
+// Core Constructed legal sets (sets 5-12)
 // This should be updated when new sets are released
-export const CORE_CONSTRUCTED_LEGAL_SETS = ['5', '6', '7', '8', '9', '10', '11'];
+export const CORE_CONSTRUCTED_LEGAL_SETS = ['5', '6', '7', '8', '9', '10', '11', '12'];
 
 // Helper function to check if a card is legal in the selected format
 const matchesLegality = (card: LorcanaCard, legality: 'core' | 'infinity'): boolean => {
