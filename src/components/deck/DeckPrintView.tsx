@@ -11,9 +11,10 @@ interface DeckPrintViewProps {
   cards: CardWithQuantity[];
   mode: 'text' | 'images';
   sortedGroups: [string, CardWithQuantity[]][];
+  columns?: number;
 }
 
-const DeckPrintView: React.FC<DeckPrintViewProps> = ({ deck, cards, mode, sortedGroups }) => {
+const DeckPrintView: React.FC<DeckPrintViewProps> = ({ deck, cards, mode, sortedGroups, columns = 4 }) => {
   const totalCards = cards.reduce((sum, c) => sum + c.quantity, 0);
 
   const content = (
@@ -31,9 +32,11 @@ const DeckPrintView: React.FC<DeckPrintViewProps> = ({ deck, cards, mode, sorted
         <div className="print-card-list">
           {sortedGroups.map(([groupName, groupCards]) => (
             <div key={groupName} className="print-group">
-              <div className="print-group-header">
-                {groupName} ({groupCards.reduce((s, c) => s + c.quantity, 0)})
-              </div>
+              {groupName !== 'All Cards' && (
+                <div className="print-group-header">
+                  {groupName} ({groupCards.reduce((s, c) => s + c.quantity, 0)})
+                </div>
+              )}
               {groupCards.map(card => (
                 <div key={card.id} className="print-card-row">
                   <span className="print-card-set">{card.setCode} #{card.number}</span>
@@ -45,11 +48,22 @@ const DeckPrintView: React.FC<DeckPrintViewProps> = ({ deck, cards, mode, sorted
           ))}
         </div>
       ) : (
-        <div className="print-image-grid">
-          {cards.map(card => (
-            <div key={card.id} className="print-card-image">
-              <img src={card.images.full} alt={card.fullName} />
-              <div className="print-card-qty">x{card.quantity}</div>
+        <div>
+          {sortedGroups.map(([groupName, groupCards]) => (
+            <div key={groupName}>
+              {groupName !== 'All Cards' && (
+                <div className="print-group-header" style={{ marginTop: '12px', marginBottom: '8px' }}>
+                  {groupName} ({groupCards.reduce((s, c) => s + c.quantity, 0)})
+                </div>
+              )}
+              <div className="print-image-grid" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+                {groupCards.map(card => (
+                  <div key={card.id} className="print-card-image">
+                    <img src={card.images.full} alt={card.fullName} />
+                    <div className="print-card-qty">x{card.quantity}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>

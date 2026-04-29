@@ -39,6 +39,11 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [printMode, setPrintMode] = useState<'text' | 'images' | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printFormat, setPrintFormat] = useState<'text' | 'images'>('text');
+  const [printGroupBy, setPrintGroupBy] = useState<'none' | 'cost' | 'type' | 'color' | 'set' | 'story'>('set');
+  const [printSortPrimary, setPrintSortPrimary] = useState<'name' | 'cost' | 'type' | 'color' | 'set' | 'story'>('name');
+  const [printSortSecondary, setPrintSortSecondary] = useState<'name' | 'cost' | 'type' | 'color' | 'set' | 'story'>('cost');
+  const [printColumns, setPrintColumns] = useState(4);
   
   // Load author profile when deck changes
   useEffect(() => {
@@ -241,6 +246,78 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
     return map;
   }, [currentDeck]);
 
+  // Print-specific sorting
+  const printSortedCards = useMemo(() => {
+    const sortFn = (a: CardWithQuantity, b: CardWithQuantity, key: string): number => {
+      switch (key) {
+        case 'cost': return a.cost - b.cost;
+        case 'type': return a.type.localeCompare(b.type);
+        case 'color': return (a.color || 'None').localeCompare(b.color || 'None');
+        case 'set': {
+          const aNum = parseInt(a.setCode);
+          const bNum = parseInt(b.setCode);
+          if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+          if (!isNaN(aNum)) return -1;
+          if (!isNaN(bNum)) return 1;
+          return a.setCode.localeCompare(b.setCode);
+        }
+        case 'story': return (a.story || 'Unknown').localeCompare(b.story || 'Unknown');
+        case 'name': default: return a.name.localeCompare(b.name);
+      }
+    };
+
+    return [...cardsWithData].sort((a, b) => {
+      if (printGroupBy !== 'none') {
+        const groupResult = sortFn(a, b, printGroupBy);
+        if (groupResult !== 0) return groupResult;
+      }
+      const primary = sortFn(a, b, printSortPrimary);
+      if (primary !== 0) return primary;
+      const secondary = sortFn(a, b, printSortSecondary);
+      if (secondary !== 0) return secondary;
+      return a.name.localeCompare(b.name);
+    });
+  }, [cardsWithData, printGroupBy, printSortPrimary, printSortSecondary]);
+
+  // Print-specific grouping
+  const printSortedGroups = useMemo(() => {
+    if (printGroupBy === 'none') {
+      return [['All Cards', printSortedCards]] as [string, CardWithQuantity[]][];
+    }
+
+    const grouped = printSortedCards.reduce((acc, card) => {
+      let groupKey: string;
+      switch (printGroupBy) {
+        case 'cost': groupKey = `${card.cost} Cost`; break;
+        case 'type': groupKey = card.type; break;
+        case 'color': groupKey = card.color || 'None'; break;
+        case 'set':
+          const setInfo = sets.find(s => s.code === card.setCode);
+          groupKey = setInfo?.name || `Set ${card.setCode}`;
+          break;
+        case 'story': groupKey = card.story || 'Unknown'; break;
+        default: groupKey = 'All Cards';
+      }
+      if (!acc[groupKey]) acc[groupKey] = [];
+      acc[groupKey].push(card);
+      return acc;
+    }, {} as Record<string, CardWithQuantity[]>);
+
+    return Object.entries(grouped).sort(([a], [b]) => {
+      if (printGroupBy === 'cost') {
+        return parseInt(a.split(' ')[0]) - parseInt(b.split(' ')[0]);
+      }
+      if (printGroupBy === 'set') {
+        const setA = sets.find(s => s.name === a);
+        const setB = sets.find(s => s.name === b);
+        if (setA && setB) return setA.number - setB.number;
+        if (setA) return -1;
+        if (setB) return 1;
+      }
+      return a.localeCompare(b);
+    });
+  }, [printSortedCards, printGroupBy, sets]);
+
   // Now handle early returns after all hooks
   if (!currentDeck) {
     return (
@@ -331,13 +408,12 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
     setShowPrintModal(true);
   };
 
-  const handlePrint = async (mode: 'text' | 'images') => {
+  const handlePrint = async () => {
     setShowPrintModal(false);
-    setPrintMode(mode);
+    setPrintMode(printFormat);
 
-    if (mode === 'images') {
-      // Preload all card images before printing
-      const imagePromises = sortedCards.map(card =>
+    if (printFormat === 'images') {
+      const imagePromises = printSortedCards.map(card =>
         new Promise<void>((resolve) => {
           const img = new window.Image();
           img.onload = () => resolve();
@@ -348,7 +424,6 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
       await Promise.all(imagePromises);
     }
 
-    // Allow React to render the print view
     setTimeout(() => {
       window.print();
       setPrintMode(null);
@@ -665,30 +740,111 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
         titleIcon={<Printer size={24} />}
         size="sm"
       >
-        <div className="p-6">
-          <p className="text-sm text-lorcana-navy mb-4">Choose a print format:</p>
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={() => handlePrint('text')}
-              className="flex items-center gap-3 px-4 py-3 bg-lorcana-cream border-2 border-lorcana-gold rounded-sm hover:bg-lorcana-gold/20 transition-colors text-left"
-            >
-              <FileText size={20} className="text-lorcana-navy flex-shrink-0" />
-              <div>
-                <div className="font-medium text-lorcana-ink">Text List</div>
-                <div className="text-xs text-lorcana-navy">Card names grouped by category</div>
-              </div>
-            </button>
-            <button
-              onClick={() => handlePrint('images')}
-              className="flex items-center gap-3 px-4 py-3 bg-lorcana-cream border-2 border-lorcana-gold rounded-sm hover:bg-lorcana-gold/20 transition-colors text-left"
-            >
-              <Image size={20} className="text-lorcana-navy flex-shrink-0" />
-              <div>
-                <div className="font-medium text-lorcana-ink">Card Images</div>
-                <div className="text-xs text-lorcana-navy">Grid of card images with quantities</div>
-              </div>
-            </button>
+        <div className="p-6 space-y-5">
+          {/* Format */}
+          <div>
+            <label className="block text-sm font-medium text-lorcana-ink mb-2">Format</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPrintFormat('text')}
+                className={`flex items-center gap-2 px-4 py-2 border-2 rounded-sm transition-colors flex-1 ${
+                  printFormat === 'text'
+                    ? 'border-lorcana-navy bg-lorcana-navy text-lorcana-gold'
+                    : 'border-lorcana-gold bg-lorcana-cream text-lorcana-ink hover:bg-lorcana-gold/20'
+                }`}
+              >
+                <FileText size={16} className="flex-shrink-0" />
+                <span className="text-sm font-medium">Text List</span>
+              </button>
+              <button
+                onClick={() => setPrintFormat('images')}
+                className={`flex items-center gap-2 px-4 py-2 border-2 rounded-sm transition-colors flex-1 ${
+                  printFormat === 'images'
+                    ? 'border-lorcana-navy bg-lorcana-navy text-lorcana-gold'
+                    : 'border-lorcana-gold bg-lorcana-cream text-lorcana-ink hover:bg-lorcana-gold/20'
+                }`}
+              >
+                <Image size={16} className="flex-shrink-0" />
+                <span className="text-sm font-medium">Card Images</span>
+              </button>
+            </div>
           </div>
+
+          {/* Grouping */}
+          <div>
+            <label className="block text-sm font-medium text-lorcana-ink mb-2">Group by</label>
+            <select
+              value={printGroupBy}
+              onChange={(e) => setPrintGroupBy(e.target.value as any)}
+              className="w-full text-sm border-2 border-lorcana-gold rounded-sm px-3 py-2 focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-lorcana-cream"
+            >
+              <option value="none">No grouping</option>
+              <option value="cost">Cost</option>
+              <option value="type">Type</option>
+              <option value="color">Color</option>
+              <option value="story">Franchise</option>
+              <option value="set">Set</option>
+            </select>
+          </div>
+
+          {/* Sorting */}
+          <div>
+            <label className="block text-sm font-medium text-lorcana-ink mb-2">Sort by</label>
+            <div className="flex gap-2">
+              <select
+                value={printSortPrimary}
+                onChange={(e) => setPrintSortPrimary(e.target.value as any)}
+                className="flex-1 text-sm border-2 border-lorcana-gold rounded-sm px-3 py-2 focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-lorcana-cream"
+              >
+                <option value="name">Name</option>
+                <option value="cost">Cost</option>
+                <option value="type">Type</option>
+                <option value="color">Color</option>
+                <option value="story">Franchise</option>
+                <option value="set">Set</option>
+              </select>
+              <span className="self-center text-sm text-lorcana-navy">then</span>
+              <select
+                value={printSortSecondary}
+                onChange={(e) => setPrintSortSecondary(e.target.value as any)}
+                className="flex-1 text-sm border-2 border-lorcana-gold rounded-sm px-3 py-2 focus:ring-2 focus:ring-lorcana-gold focus:border-lorcana-navy bg-lorcana-cream"
+              >
+                <option value="name">Name</option>
+                <option value="cost">Cost</option>
+                <option value="type">Type</option>
+                <option value="color">Color</option>
+                <option value="story">Franchise</option>
+                <option value="set">Set</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Columns (images only) */}
+          {printFormat === 'images' && (
+            <div>
+              <label className="block text-sm font-medium text-lorcana-ink mb-2">Cards per row</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={2}
+                  max={6}
+                  value={printColumns}
+                  onChange={(e) => setPrintColumns(Number(e.target.value))}
+                  className="flex-1 accent-lorcana-navy"
+                />
+                <span className="text-sm font-medium text-lorcana-ink w-6 text-center">{printColumns}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Print button */}
+          <button
+            onClick={handlePrint}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-lorcana-navy text-lorcana-gold font-medium rounded-sm hover:bg-lorcana-purple transition-colors border-2 border-lorcana-gold"
+          >
+            <Printer size={18} />
+            Print
+          </button>
         </div>
       </Modal>
 
@@ -696,9 +852,10 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
       {printMode && currentDeck && (
         <DeckPrintView
           deck={currentDeck}
-          cards={sortedCards}
+          cards={printSortedCards}
           mode={printMode}
-          sortedGroups={sortedGroups}
+          sortedGroups={printSortedGroups}
+          columns={printColumns}
         />
       )}
     </div>
