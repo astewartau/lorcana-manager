@@ -777,7 +777,12 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
             <label className="block text-sm font-medium text-lorcana-ink mb-2">Format</label>
             <div className="flex gap-2">
               <button
-                onClick={() => setPrintFormat('text')}
+                onClick={() => {
+                  setPrintFormat('text');
+                  setPrintGroupBy('set');
+                  setPrintSortPrimary('name');
+                  setPrintSortSecondary('cost');
+                }}
                 className={`flex items-center gap-2 px-4 py-2 border-2 rounded-sm transition-colors flex-1 ${
                   printFormat === 'text'
                     ? 'border-lorcana-navy bg-lorcana-navy text-lorcana-gold'
@@ -788,7 +793,13 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
                 <span className="text-sm font-medium">Text List</span>
               </button>
               <button
-                onClick={() => setPrintFormat('images')}
+                onClick={() => {
+                  setPrintFormat('images');
+                  setPrintGroupBy('none');
+                  setPrintSortPrimary('cost');
+                  setPrintSortSecondary('set');
+                  setPrintColumns(6);
+                }}
                 className={`flex items-center gap-2 px-4 py-2 border-2 rounded-sm transition-colors flex-1 ${
                   printFormat === 'images'
                     ? 'border-lorcana-navy bg-lorcana-navy text-lorcana-gold'
