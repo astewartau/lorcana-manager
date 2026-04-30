@@ -632,17 +632,20 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
                                 }}
                               >
                                 {Array.from({ length: card.quantity }, (_, index) => {
-                                  // Show missing copies in greyscale (the first 'missing' number of copies)
-                                  const isMissing = index < missingCopies;
+                                  // Front cards (lowest indices) are coloured for owned copies, rest greyed
+                                  const isMissing = index >= ownedCopies;
 
                                   return (
                                     <div
                                       key={index}
-                                      className={`absolute top-0 left-0 w-full h-full ${isMissing ? 'grayscale' : ''}`}
+                                      className="absolute top-0 left-0 w-full h-full"
                                       style={{
                                         transform: `translateY(${index * -12}px) translateZ(0)`, // translateZ(0) forces GPU layer
                                         zIndex: card.quantity - index,
-                                        filter: index > 0 ? `brightness(${1 - (index * 0.1)})` : undefined,
+                                        filter: [
+                                          isMissing ? (index === 0 ? 'grayscale(100%)' : 'grayscale(100%) opacity(0.5)') : '',
+                                          index > 0 ? `brightness(${1 - (index * 0.1)})` : '',
+                                        ].filter(Boolean).join(' ') || undefined,
                                       }}
                                     >
                                       <div
@@ -665,7 +668,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
 
                                 {/* Ownership indicator */}
                                 {missingCopies > 0 && (
-                                  <div className="absolute top-2 left-2 px-2 py-1 bg-red-600 text-white rounded-sm text-xs font-bold shadow-lg z-50 border border-white">
+                                  <div className="absolute top-2 right-2 px-2 py-1 bg-red-600 text-white rounded-sm text-xs font-bold shadow-lg z-50 border border-white">
                                     {ownedCopies}/{card.quantity}
                                   </div>
                                 )}

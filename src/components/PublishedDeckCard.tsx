@@ -105,15 +105,45 @@ const PublishedDeckCard: React.FC<PublishedDeckCardProps> = ({
             </div>
           </div>
           
-          <div className="flex-1 min-w-0 mr-3">
-            <h3 
+          <div className="flex-1 min-w-0">
+            {/* Ink colors and card count */}
+            <div className="flex items-center space-x-2 mb-1">
+              {inkColors.length > 0 && (
+                <div className="flex space-x-1">
+                  {inkColors.map(([color]) => (
+                    <div
+                      key={color}
+                      className="flex items-center"
+                      title={color}
+                    >
+                      {COLOR_ICONS[color] ? (
+                        <img
+                          src={COLOR_ICONS[color]}
+                          alt={color}
+                          className="w-5 h-5"
+                        />
+                      ) : (
+                        <div className={`w-4 h-4 rounded-full ${getInkColorBg(color)} border-2 border-white shadow-sm`} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center space-x-1 text-lorcana-navy">
+                <Copy size={14} />
+                <span className="text-xs font-medium">{cardCount}</span>
+              </div>
+            </div>
+
+            {/* Deck name */}
+            <h3
               className="text-lg font-bold text-lorcana-ink cursor-pointer hover:text-lorcana-navy transition-colors truncate"
               onClick={() => onView(deck.id)}
             >
               {deck.name}
             </h3>
-            
-            {/* Author information */}
+
+            {/* Author information and updated date */}
             <div className="flex items-center space-x-2 mt-1">
               <p className="text-xs text-lorcana-navy">by</p>
               {deck.userId && onViewProfile ? (
@@ -133,38 +163,11 @@ const PublishedDeckCard: React.FC<PublishedDeckCardProps> = ({
                   <span>{authorName || 'Unknown'}</span>
                 </span>
               )}
+              <span className="text-xs text-lorcana-navy/50">·</span>
+              <span className="text-xs text-lorcana-navy/70">
+                {new Date(deck.updatedAt).toLocaleDateString()}
+              </span>
             </div>
-          </div>
-          
-          {/* Card count and ink colors in top-right */}
-          <div className="flex items-center space-x-3 flex-shrink-0">
-            <div className="flex items-center space-x-1 text-lorcana-navy">
-              <Copy size={14} />
-              <span className="text-xs font-medium">{cardCount}</span>
-            </div>
-            
-            {/* Ink color icons */}
-            {inkColors.length > 0 && (
-              <div className="flex space-x-1">
-                {inkColors.map(([color]) => (
-                  <div 
-                    key={color} 
-                    className="flex items-center"
-                    title={color}
-                  >
-                    {COLOR_ICONS[color] ? (
-                      <img 
-                        src={COLOR_ICONS[color]} 
-                        alt={color}
-                        className="w-6 h-6"
-                      />
-                    ) : (
-                      <div className={`w-5 h-5 rounded-full ${getInkColorBg(color)} border-2 border-white shadow-sm`} />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
         
@@ -177,23 +180,25 @@ const PublishedDeckCard: React.FC<PublishedDeckCardProps> = ({
           <TagPills tags={deck.tags} className="mt-2" />
         )}
 
-        {/* Collection coverage and last updated */}
-        <div className="flex items-center justify-between mt-2">
-          <div className={`text-xs font-medium px-2 py-1 rounded ${
-            collectionCoverage >= 100 
-              ? 'bg-green-100 text-green-800 border border-green-200'
-              : collectionCoverage >= 75
-              ? 'bg-blue-100 text-blue-800 border border-blue-200'  
-              : collectionCoverage >= 50
-              ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-              : 'bg-red-100 text-red-800 border border-red-200'
-          }`}>
-            Collection: {collectionCoverage.toFixed(1)}%
+        {/* Collection coverage progress bar */}
+        <div className="flex items-center gap-2 mt-2">
+          <div className="flex-1 h-2 bg-lorcana-cream border border-lorcana-gold/40 rounded-sm overflow-hidden">
+            <div
+              className={`h-full transition-all duration-300 ${
+                collectionCoverage >= 100
+                  ? 'bg-green-500'
+                  : collectionCoverage >= 75
+                  ? 'bg-lorcana-gold'
+                  : collectionCoverage >= 50
+                  ? 'bg-yellow-500'
+                  : 'bg-red-400'
+              }`}
+              style={{ width: `${Math.min(collectionCoverage, 100)}%` }}
+            />
           </div>
-          
-          <p className="text-xs text-lorcana-navy">
-            Updated {new Date(deck.updatedAt).toLocaleDateString()}
-          </p>
+          <span className="text-xs font-medium text-lorcana-navy whitespace-nowrap">
+            {collectionCoverage.toFixed(0)}%
+          </span>
         </div>
       </div>
 
