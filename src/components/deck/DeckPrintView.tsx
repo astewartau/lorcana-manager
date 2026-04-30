@@ -68,6 +68,8 @@ const DeckPrintView: React.FC<DeckPrintViewProps> = ({ deck, cards, mode, sorted
           ))}
         </div>
       )}
+
+      <div className="print-footer">Generated using Lorebook (lorebook.ink)</div>
     </div>
   );
 

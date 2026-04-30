@@ -473,6 +473,15 @@
     text-align: center;
     margin-top: 2px;
   }
+
+  .print-footer {
+    text-align: center;
+    font-size: 10px;
+    color: #999;
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+  }
 }
 
 /* Screen: hide print container */
