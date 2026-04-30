@@ -145,6 +145,21 @@ export interface SortOption {
   direction: 'asc' | 'desc';
 }
 
+export interface DeckFilterOptions {
+  colors: string[];
+  tags: string[];
+  format: 'any' | 'core' | 'infinity';
+  franchiseFilters: FranchiseFilter[];
+}
+
+export interface FranchiseFilter {
+  story: string;
+  minPercent: number;
+}
+
+export type DeckViewMode = 'grid' | 'table';
+export type DeckSortMode = 'newest' | 'updated' | 'name' | 'tag';
+
 export interface CardDatabase {
   metadata: {
     formatVersion: string;
