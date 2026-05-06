@@ -70,7 +70,7 @@ const Collection: React.FC<CollectionProps> = ({
   // Calculate set summaries
   const setSummaries = useMemo((): SetSummary[] => {
     return sets
-      .filter(set => set.number <= 11) // Hide unreleased sets (12+)
+      .filter(set => set.number <= 12)
       .map(set => {
       // Get all cards in this set - each card is individual now
       const setCards = allCards.filter(card => card.setCode === set.code);
@@ -121,7 +121,7 @@ const Collection: React.FC<CollectionProps> = ({
         rarityBreakdown
       };
     }).sort((a, b) => b.number - a.number); // Sort by set number (newest first)
-  }, [getCardQuantity]);
+  }, [getCardQuantity, allCards, sets]);
 
   const handlePublishClick = (setCode: string, setName: string) => {
     if (!user) {

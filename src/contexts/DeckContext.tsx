@@ -84,8 +84,9 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
 
   // Cleanup pending save timers on unmount
   useEffect(() => {
+    const timers = saveTimersRef.current;
     return () => {
-      Object.values(saveTimersRef.current).forEach(clearTimeout);
+      Object.values(timers).forEach(clearTimeout);
     };
   }, []);
 

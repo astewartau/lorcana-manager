@@ -14,6 +14,7 @@ import DeckPrintView from './deck/DeckPrintView';
 import { Modal } from './ui/Modal';
 import CardPhotoSwipe from './CardPhotoSwipe';
 import { LorcanaCard } from '../types';
+import AvatarEditor from './AvatarEditor';
 import { exportToInktable, copyInktableUrl, validateInktableExport } from '../utils/inktableExport';
 
 interface DeckSummaryProps {
@@ -28,7 +29,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
   const { loadUserProfile } = useProfile();
   const { getCardQuantity } = useCollection();
   const { allCards, sets } = useCardData();
-  const { currentDeck, decks, publicDecks, setCurrentDeck, startEditingDeck, getDeckSummary, loadPublicDecks, addCardToDeck, removeCardFromDeck, updateCardQuantity } = useDeck();
+  const { currentDeck, decks, publicDecks, setCurrentDeck, startEditingDeck, getDeckSummary, loadPublicDecks, addCardToDeck, removeCardFromDeck, updateCardQuantity, updateDeck } = useDeck();
   const [authorDisplayName, setAuthorDisplayName] = useState<string>('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [sortBy, setSortBy] = useState<'cost' | 'type' | 'color' | 'set' | 'story'>('set');
@@ -44,7 +45,8 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
   const [printSortPrimary, setPrintSortPrimary] = useState<'name' | 'cost' | 'type' | 'color' | 'set' | 'story'>('name');
   const [printSortSecondary, setPrintSortSecondary] = useState<'name' | 'cost' | 'type' | 'color' | 'set' | 'story'>('cost');
   const [printColumns, setPrintColumns] = useState(4);
-  
+  const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
+
   // Load author profile when deck changes
   useEffect(() => {
     if (currentDeck?.userId && currentDeck.userId !== user?.id) {
@@ -457,6 +459,16 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
     URL.revokeObjectURL(url);
   };
 
+  const handleSaveAvatar = async (avatarData: { cardId: number; cropData: { x: number; y: number; scale: number } }) => {
+    if (!currentDeck) return;
+    try {
+      await updateDeck({ ...currentDeck, avatar: avatarData });
+      setAvatarEditorOpen(false);
+    } catch (error) {
+      console.error('Error updating deck avatar:', error);
+    }
+  };
+
   const getCardImageUrl = (cardId: number) => {
     // Find the actual card to get the image URL
     const card = allCards.find(c => c.id === cardId);
@@ -551,6 +563,7 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
           onExportCsv={handleExportCsv}
           getCardImageUrl={getCardImageUrl}
           onViewProfile={handleViewProfile}
+          onEditAvatar={() => setAvatarEditorOpen(true)}
         />
 
         {/* Sorting Controls */}
@@ -900,6 +913,14 @@ const DeckSummary: React.FC<DeckSummaryProps> = ({ onBack, onEditDeck }) => {
           columns={printColumns}
         />
       )}
+
+      {/* Avatar Editor */}
+      <AvatarEditor
+        isOpen={avatarEditorOpen}
+        onClose={() => setAvatarEditorOpen(false)}
+        onSave={handleSaveAvatar}
+        currentAvatar={currentDeck?.avatar}
+      />
     </div>
   );
 };

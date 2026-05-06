@@ -50,7 +50,7 @@ const DeckCardList: React.FC<DeckCardListProps> = ({
         };
       })
       .filter(card => card !== null) as CardWithQuantity[];
-  }, [deck.cards, getCardQuantity]);
+  }, [deck.cards, getCardQuantity, allCards]);
 
   // Sort cards by set and number (always)
   const sortedCards = useMemo(() => {

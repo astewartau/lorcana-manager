@@ -35,7 +35,6 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
     deleteDeck,
     duplicateDeck,
     getDeckSummary,
-    exportDeck,
     importDeck,
     startEditingDeck,
     publishDeck,
@@ -189,19 +188,6 @@ const MyDecks: React.FC<MyDecksProps> = ({ onBuildDeck, onViewDeck }) => {
     }
   };
 
-  const handleExportDeck = (deckId: string) => {
-    const deckData = exportDeck(deckId);
-    const deck = decks.find(d => d.id === deckId);
-    if (!deck) return;
-    const blob = new Blob([deckData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${deck.name.replace(/[^a-z0-9]/gi, '_')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showSuccess('Deck exported successfully');
-  };
 
   const handleImportDeck = () => {
     setImportModalOpen(true);

@@ -41,7 +41,7 @@ const AvatarEditor: React.FC<AvatarEditorProps> = ({
         setCropData(currentAvatar.cropData);
       }
     }
-  }, [currentAvatar, isOpen]);
+  }, [currentAvatar, isOpen, allCards]);
 
   // Prevent scrolling when dragging
   useEffect(() => {

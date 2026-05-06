@@ -21,6 +21,7 @@ interface DeckHeaderProps {
   onExportCsv?: () => void;
   getCardImageUrl: (cardId: number) => string;
   onViewProfile: (userId: string) => void;
+  onEditAvatar?: () => void;
 }
 
 const DeckHeader: React.FC<DeckHeaderProps> = ({
@@ -38,7 +39,8 @@ const DeckHeader: React.FC<DeckHeaderProps> = ({
   onPrint,
   onExportCsv,
   getCardImageUrl,
-  onViewProfile
+  onViewProfile,
+  onEditAvatar
 }) => {
   const isOwner = userId && deck.userId === userId;
 
@@ -56,8 +58,13 @@ const DeckHeader: React.FC<DeckHeaderProps> = ({
   // Avatar component (shared between layouts)
   const Avatar = ({ size = 'lg' }: { size?: 'sm' | 'lg' }) => {
     const sizeClass = size === 'lg' ? 'w-20 h-20' : 'w-16 h-16';
+    const canEdit = isOwner && onEditAvatar;
     return (
-      <div className={`${sizeClass} rounded-full overflow-hidden border-4 border-lorcana-gold shadow-lg`}>
+      <div
+        className={`${sizeClass} rounded-full overflow-hidden border-4 border-lorcana-gold shadow-lg ${canEdit ? 'cursor-pointer hover:border-lorcana-navy transition-colors' : ''}`}
+        onClick={canEdit ? onEditAvatar : undefined}
+        title={canEdit ? 'Change deck avatar' : undefined}
+      >
         {deck.avatar ? (
           <div
             className="w-full h-full"

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Book, ChevronLeft, ChevronRight, Maximize2, Minimize2, Search, Plus, Minus, X } from 'lucide-react';
+import { ArrowLeft, Book, ChevronLeft, ChevronRight, Maximize2, Minimize2, Search, Plus, X } from 'lucide-react';
 import { useCollection } from '../contexts/CollectionContext';
 import { useBinder } from '../contexts/BinderContext';
 import { useBinderNavigation } from '../hooks/useBinderNavigation';
@@ -199,7 +199,7 @@ const SetBinder: React.FC = () => {
   };
 
   // Helper function to get card quantity from owner's collection data
-  const getOwnerCardQuantity = (cardId: number) => {
+  const getOwnerCardQuantity = useCallback((cardId: number) => {
     // Only use owner collection data if this is a published binder AND we have the data loaded
     if (binderId && publishedBinder && ownerCollectionData.length > 0) {
       // For published binders, use the owner's collection data
@@ -220,7 +220,7 @@ const SetBinder: React.FC = () => {
       // For personal binders or when data is still loading, use current user's collection
       return getCardQuantity(cardId);
     }
-  };
+  }, [binderId, publishedBinder, ownerCollectionData, getCardQuantity]);
 
   // Determine the actual setCode to use (from URL param or from published binder)
   const effectiveSetCode = setCode || publishedBinder?.set_code;
@@ -254,7 +254,7 @@ const SetBinder: React.FC = () => {
         totalQuantity: quantities.total
       };
     });
-  }, [isCustomBinder, customBinder, effectiveSetCode, allCards, binderId, publishedBinder, ownerCollectionData]);
+  }, [isCustomBinder, customBinder, effectiveSetCode, allCards, getOwnerCardQuantity]);
 
   // Search results for add panel
   const addSearchResults = useMemo(() => {

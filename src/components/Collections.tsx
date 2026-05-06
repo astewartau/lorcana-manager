@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Book, Users, Crown, Loader2, Trash2, Plus, Eye, Edit } from 'lucide-react';
+import { Package, Book, Users, Crown, Loader2, Trash2, Plus, Eye } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCollection } from '../contexts/CollectionContext';
 import { useBinder } from '../contexts/BinderContext';
