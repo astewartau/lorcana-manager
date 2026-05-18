@@ -54,6 +54,9 @@ interface DeckContextType {
   publishDeck: (deckId: string) => Promise<void>;
   unpublishDeck: (deckId: string) => Promise<void>;
   loadPublicDecks: (searchTerm?: string) => Promise<void>;
+  loadMorePublicDecks: () => Promise<void>;
+  hasMorePublicDecks: boolean;
+  publicDecksLoading: boolean;
   allUserTags: string[];
 }
 
@@ -71,6 +74,10 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
   const [currentDeck, setCurrentDeck] = useState<Deck | null>(null);
   const [isEditingDeck, setIsEditingDeck] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [hasMorePublicDecks, setHasMorePublicDecks] = useState(false);
+  const [publicDecksLoading, setPublicDecksLoading] = useState(false);
+  const publicDecksSearchRef = useRef<string | undefined>(undefined);
+  const publicDecksOffsetRef = useRef(0);
 
   // Refs for latest state — updated manually in card operations so rapid
   // clicks always read the most recent deck (avoids stale closure problem)
@@ -149,39 +156,68 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
     }
   };
 
-  const loadPublicDecks = async (searchTerm?: string) => {
-    setLoading(true);
-    try {
-      let data: any[] | null = null;
-      let error: any = null;
+  const PUBLIC_DECKS_PAGE_SIZE = 50;
 
-      if (searchTerm) {
-        // Use RPC function to search across name, description, and tags
-        const result = await supabase.rpc('search_public_decks', { search_term: searchTerm });
-        data = result.data;
-        error = result.error;
-      } else {
-        const result = await supabase
-          .from(TABLES.USER_DECKS)
-          .select('*')
-          .eq('is_public', true)
-          .order('updated_at', { ascending: false })
-          .limit(50);
-        data = result.data;
-        error = result.error;
-      }
+  const fetchPublicDecksPage = async (searchTerm: string | undefined, offset: number): Promise<{ data: any[] | null; error: any }> => {
+    if (searchTerm) {
+      return await supabase.rpc('search_public_decks', {
+        search_term: searchTerm,
+        page_offset: offset,
+        page_limit: PUBLIC_DECKS_PAGE_SIZE,
+      });
+    } else {
+      return await supabase
+        .from(TABLES.USER_DECKS)
+        .select('*')
+        .eq('is_public', true)
+        .order('updated_at', { ascending: false })
+        .range(offset, offset + PUBLIC_DECKS_PAGE_SIZE - 1);
+    }
+  };
+
+  const loadPublicDecks = async (searchTerm?: string) => {
+    setPublicDecksLoading(true);
+    publicDecksSearchRef.current = searchTerm;
+    publicDecksOffsetRef.current = 0;
+    try {
+      const { data, error } = await fetchPublicDecksPage(searchTerm, 0);
 
       if (error) {
         console.error('Error loading public decks:', error);
-        console.error('Query error details:', error.message);
       } else if (data) {
         const convertedDecks = data.map((d: any) => convertSupabaseDeck(d));
         setPublicDecks(convertedDecks);
+        setHasMorePublicDecks(data.length >= PUBLIC_DECKS_PAGE_SIZE);
+        publicDecksOffsetRef.current = data.length;
       }
     } catch (error) {
       console.error('Error loading public decks:', error);
     } finally {
-      setLoading(false);
+      setPublicDecksLoading(false);
+    }
+  };
+
+  const loadMorePublicDecks = async () => {
+    if (publicDecksLoading || !hasMorePublicDecks) return;
+    setPublicDecksLoading(true);
+    try {
+      const { data, error } = await fetchPublicDecksPage(
+        publicDecksSearchRef.current,
+        publicDecksOffsetRef.current
+      );
+
+      if (error) {
+        console.error('Error loading more public decks:', error);
+      } else if (data) {
+        const convertedDecks = data.map((d: any) => convertSupabaseDeck(d));
+        setPublicDecks(prev => [...prev, ...convertedDecks]);
+        setHasMorePublicDecks(data.length >= PUBLIC_DECKS_PAGE_SIZE);
+        publicDecksOffsetRef.current += data.length;
+      }
+    } catch (error) {
+      console.error('Error loading more public decks:', error);
+    } finally {
+      setPublicDecksLoading(false);
     }
   };
 
@@ -694,6 +730,9 @@ export const DeckProvider: React.FC<DeckProviderProps> = ({ children }) => {
     publishDeck,
     unpublishDeck,
     loadPublicDecks,
+    loadMorePublicDecks,
+    hasMorePublicDecks,
+    publicDecksLoading,
     allUserTags
   };
 

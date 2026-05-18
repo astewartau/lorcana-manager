@@ -5,8 +5,8 @@ ADD COLUMN tags TEXT[] DEFAULT '{}';
 -- Create a GIN index for efficient array searches
 CREATE INDEX idx_user_decks_tags ON user_decks USING GIN (tags);
 
--- RPC function to search public decks across name, description, and tags
-CREATE OR REPLACE FUNCTION search_public_decks(search_term TEXT)
+-- RPC function to search public decks across name, description, and tags (with pagination)
+CREATE OR REPLACE FUNCTION search_public_decks(search_term TEXT, page_offset INT DEFAULT 0, page_limit INT DEFAULT 50)
 RETURNS SETOF user_decks AS $$
 BEGIN
   RETURN QUERY
@@ -22,7 +22,8 @@ BEGIN
       )
     )
   ORDER BY updated_at DESC
-  LIMIT 50;
+  OFFSET page_offset
+  LIMIT page_limit;
 END;
 $$ LANGUAGE plpgsql STABLE;
 

@@ -30,7 +30,7 @@ function loadViewMode(): DeckViewMode {
 }
 
 export function useDeckBrowser(activeTab: 'my' | 'public') {
-  const { decks, publicDecks, getDeckSummary, allUserTags } = useDeck();
+  const { decks, publicDecks, getDeckSummary, allUserTags, loadMorePublicDecks, hasMorePublicDecks, publicDecksLoading } = useDeck();
   const { allCards } = useCardData();
 
   const savedSort = useMemo(() => loadSortPreference(), []);
@@ -66,7 +66,7 @@ export function useDeckBrowser(activeTab: 'my' | 'public') {
 
   const activeFiltersCount = useMemo(() => countActiveDeckFilters(filters), [filters]);
 
-  const { visibleCount, sentinelRef, hasMore, reset: resetScroll } = useInfiniteScroll({
+  const { visibleCount, sentinelRef, hasMore: hasMoreLocal, reset: resetScroll } = useInfiniteScroll({
     totalItems: filteredDecks.length,
   });
 
@@ -74,6 +74,15 @@ export function useDeckBrowser(activeTab: 'my' | 'public') {
   useEffect(() => {
     resetScroll();
   }, [debouncedSearchTerm, filters, sortBy, sortTagCategory, resetScroll]);
+
+  // Load more public decks from server when local items are exhausted
+  useEffect(() => {
+    if (activeTab === 'public' && !hasMoreLocal && hasMorePublicDecks && !publicDecksLoading) {
+      loadMorePublicDecks();
+    }
+  }, [activeTab, hasMoreLocal, hasMorePublicDecks, publicDecksLoading, loadMorePublicDecks]);
+
+  const hasMore = activeTab === 'public' ? (hasMoreLocal || hasMorePublicDecks) : hasMoreLocal;
 
   const visibleDecks = useMemo(
     () => filteredDecks.slice(0, visibleCount),
