@@ -77,7 +77,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
                 : 'bg-lorcana-cream hover:bg-lorcana-gold/30 text-lorcana-ink border border-lorcana-gold/50'
               }
             `}
-            title="Core Constructed: Sets 5-10"
+            title="Core Constructed: Sets 9-13"
           >
             Core
           </button>
@@ -97,7 +97,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         </div>
         <p className="text-xs text-lorcana-navy mt-2">
           {filters.legality === 'core'
-            ? 'Core Constructed: Sets 5-10 only'
+            ? 'Core Constructed: Sets 9-13 only'
             : 'Infinity: All sets included'}
         </p>
       </FilterSection>

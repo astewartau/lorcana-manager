@@ -70,7 +70,7 @@ const Collection: React.FC<CollectionProps> = ({
   // Calculate set summaries
   const setSummaries = useMemo((): SetSummary[] => {
     return sets
-      .filter(set => set.number <= 12)
+      .filter(set => set.number <= 13)
       .map(set => {
       // Get all cards in this set - each card is individual now
       const setCards = allCards.filter(card => card.setCode === set.code);
